@@ -107,11 +107,11 @@ export default function RegisterPage() {
       </div>
       
       {/* Right Panel (Registration Form) */}
-      <div className="w-full lg:w-[55%] h-full flex flex-col justify-center items-center p-12 overflow-y-auto">
-        <div className="w-full max-w-lg pb-12 pt-8">
+      <div className="w-full lg:w-[55%] min-h-screen flex flex-col justify-center p-12 overflow-y-auto">
+        <div className="w-full max-w-[512px] mx-auto pb-12 pt-8">
           <div className="mb-8">
-            <h1 className="font-h1 text-h1 text-on-surface mb-2">Create Your Account</h1>
-            <p className="font-body text-body text-on-surface-variant">Fill in your details to request system access</p>
+            <h1 className="font-sans text-h1 text-on-surface mb-2">Create Your Account</h1>
+            <p className="font-sans text-body text-on-surface-variant">Fill in your details to request system access</p>
           </div>
           
           {/* Info Box */}

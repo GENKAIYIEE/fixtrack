@@ -33,10 +33,14 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ role: user.role }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in /api/auth/login:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { 
+        message: 'Internal server error',
+        debug: error.message,
+        stack: error.stack 
+      },
       { status: 500 }
     );
   }

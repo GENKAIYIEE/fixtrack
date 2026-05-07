@@ -69,8 +69,8 @@ const config: Config = {
       },
       spacing: {
         "container-margin": "32px",
-        "xl": "32px",
-        "lg": "24px",
+        "spacing-xl": "32px",
+        "spacing-lg": "24px",
       }
     },
   },
