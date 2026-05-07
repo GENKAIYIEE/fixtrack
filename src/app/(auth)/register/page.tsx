@@ -9,7 +9,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [department, setDepartment] = useState('');
-  const [role, setRole] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -23,7 +22,7 @@ export default function RegisterPage() {
     setSuccessMessage(null);
 
     // Basic required field validation
-    if (!firstName || !lastName || !email || !idNumber || !department || !role || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !idNumber || !department || !password || !confirmPassword) {
       setErrorMessage('All fields are required.');
       return;
     }
@@ -52,7 +51,6 @@ export default function RegisterPage() {
           email,
           idNumber,
           department,
-          role,
           password,
         }),
       });
@@ -64,7 +62,7 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccessMessage('Your account has been submitted for review. You will be notified once the administrator approves your account.');
+      setSuccessMessage('Registration successful! Your account is now active. You can log in immediately.');
       
       // Clear form
       setFirstName('');
@@ -72,7 +70,6 @@ export default function RegisterPage() {
       setEmail('');
       setIdNumber('');
       setDepartment('');
-      setRole('');
       setPassword('');
       setConfirmPassword('');
     } catch (err: any) {
@@ -121,7 +118,7 @@ export default function RegisterPage() {
           <div className="mb-8 bg-tertiary-fixed/30 border border-tertiary-fixed rounded-lg p-4 flex items-start gap-4">
             <span className="material-symbols-outlined text-tertiary-container mt-1">info</span>
             <p className="font-body-sm text-body-sm text-on-tertiary-fixed-variant leading-snug">
-              Your account will be reviewed and activated by the system administrator. You will receive an email confirmation once approved.
+              Registration is open to Students, Faculty, and Staff of the Polytechnic College of La Union. Your account will be activated immediately upon registration.
             </p>
           </div>
           
@@ -191,50 +188,27 @@ export default function RegisterPage() {
               />
             </div>
             
-            {/* Department & Role */}
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="flex-1 flex flex-col gap-2">
-                <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="department">Department</label>
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-4 py-3 pr-8 font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors" 
-                    id="department" 
-                    name="department" 
-                    required
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    disabled={isLoading || successMessage !== null}
-                  >
-                    <option disabled value="">Select department</option>
-                    <option value="CIT">CIT</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Sciences">Sciences</option>
-                    <option value="Administration">Administration</option>
-                    <option value="Maintenance">Maintenance</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="role">Role Request</label>
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-4 py-3 pr-8 font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors" 
-                    id="role" 
-                    name="role" 
-                    required
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    disabled={isLoading || successMessage !== null}
-                  >
-                    <option disabled value="">Select role</option>
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="staff">Staff</option>
-                    <option value="technician">Technician</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-                </div>
+            {/* Department */}
+            <div className="flex flex-col gap-2">
+              <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="department">Department</label>
+              <div className="relative">
+                <select 
+                  className="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-4 py-3 pr-8 font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors" 
+                  id="department" 
+                  name="department" 
+                  required
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  disabled={isLoading || successMessage !== null}
+                >
+                  <option disabled value="">Select department</option>
+                  <option value="CIT">CIT</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Sciences">Sciences</option>
+                  <option value="Administration">Administration</option>
+                  <option value="Maintenance">Maintenance</option>
+                </select>
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
               </div>
             </div>
             

@@ -66,6 +66,11 @@ const config: Config = {
         body: ['Inter'],
         h1: ['Inter'],
         h2: ['Inter']
+      },
+      spacing: {
+        "container-margin": "32px",
+        "xl": "32px",
+        "lg": "24px",
       }
     },
   },

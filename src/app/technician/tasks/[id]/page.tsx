@@ -1,3 +1,4 @@
-export default function TechnicianTaskDetailPage({ params }: { params: { id: string } }) {
-  return <div>Task Detail: {params.id}</div>
+export default async function TechnicianTaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <div>Task Detail: {id}</div>
 }

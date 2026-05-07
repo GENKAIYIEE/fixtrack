@@ -2,15 +2,14 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
-import { UserRole } from '@/generated/prisma/enums';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, idNumber, department, role, password } = body;
+    const { firstName, lastName, email, idNumber, department, password } = body;
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !idNumber || !department || !role || !password) {
+    if (!firstName || !lastName || !email || !idNumber || !department || !password) {
       return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
     }
 
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
     const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
     });
 
     if (supabaseError || !supabaseUser.user) {
@@ -55,10 +54,7 @@ export async function POST(request: Request) {
     // Hash password for Prisma
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Map role to enum value
-    const roleUpper = role.toUpperCase() as UserRole;
-
-    // Step 4: Create Prisma User record
+    // Step 4: Create Prisma User record — role is always USER for public registration
     await prisma.user.create({
       data: {
         id: supabaseUser.user.id,
@@ -68,14 +64,14 @@ export async function POST(request: Request) {
         lastName,
         idNumber,
         department,
-        role: roleUpper,
-        accountStatus: 'PENDING',
+        role: 'USER',
+        accountStatus: 'ACTIVE',
       },
     });
 
     // Step 5: Return success
     return NextResponse.json(
-      { message: 'Registration successful. Your account is pending administrator approval.' },
+      { message: 'Registration successful. Your account is now active — you can log in immediately.' },
       { status: 201 }
     );
   } catch (error: any) {

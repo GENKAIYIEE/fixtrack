@@ -25,13 +25,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.accountStatus === 'PENDING') {
-      return NextResponse.json(
-        { message: 'Your account is pending administrator approval.' },
-        { status: 403 }
-      );
-    }
-
     if (user.accountStatus === 'INACTIVE') {
       return NextResponse.json(
         { message: 'Your account has been deactivated. Please contact the administrator.' },

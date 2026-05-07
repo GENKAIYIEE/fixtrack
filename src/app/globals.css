@@ -4,3 +4,9 @@
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+@media print {
+  nav, header, .no-print { display: none !important; }
+  main { margin-left: 0 !important; padding-top: 0 !important; }
+  body { background: white !important; }
+}

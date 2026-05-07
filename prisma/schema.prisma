@@ -30,6 +30,7 @@ datasource db {
 // ----------------------------------------------------------------
 
 enum UserRole {
+  USER
   STUDENT
   FACULTY
   STAFF

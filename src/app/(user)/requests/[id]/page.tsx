@@ -1,3 +1,4 @@
-export default function UserRequestDetailPage({ params }: { params: { id: string } }) {
-  return <div>Request Detail: {params.id}</div>
+export default async function UserRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <div>Request Detail: {id}</div>
 }

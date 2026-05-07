@@ -14,10 +14,10 @@ export default function AdminTopBar({ user }: { user: UserProps }) {
       <div className="flex items-center gap-4">
         <h1 className="font-h2 text-h2 text-slate-900">FixTrack Monitoring</h1>
         <span className="text-slate-500 font-label-md text-label-md px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
-          Polytechnic College of La Union
+
         </span>
       </div>
-      
+
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
           <button className="hover:bg-slate-50 rounded-full p-2 transition-all text-slate-500">
@@ -27,7 +27,7 @@ export default function AdminTopBar({ user }: { user: UserProps }) {
             <span className="material-symbols-outlined">help_outline</span>
           </button>
         </div>
-        
+
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
           <div className="flex flex-col items-end">
             <span className="font-label-md text-label-md text-slate-900">{user.firstName}</span>

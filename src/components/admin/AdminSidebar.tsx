@@ -24,7 +24,7 @@ export default function AdminSidebar() {
   ];
 
   const getLinkClasses = (href: string) => {
-    const isActive = pathname === href;
+    const isActive = pathname === href || pathname.startsWith(`${href}/`);
     return isActive
       ? 'bg-[#2563EB] text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200'
       : 'text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200';
@@ -41,7 +41,7 @@ export default function AdminSidebar() {
       
       <nav className="flex-1 flex flex-col gap-1 px-2">
         {navLinks.map((link) => {
-          const isActive = pathname === link.href;
+          const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
           return (
             <Link key={link.href} href={link.href} className={getLinkClasses(link.href)}>
               <span 
