@@ -19,6 +19,7 @@ export default function GeneralSettings({ settings, onSave, isSaving, isActive, 
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       platform_name: settings.platform_name || 'FixTrack — Polytechnic College of La Union',
       institution_name: settings.institution_name || 'Polytechnic College of La Union',

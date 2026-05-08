@@ -9,6 +9,34 @@ interface RequestSettingsProps {
   isActive: boolean;
 }
 
+const ToggleRow = ({ 
+  label, 
+  description, 
+  checked,
+  onChange
+}: { 
+  label: string, 
+  description: string, 
+  checked: boolean,
+  onChange: (checked: boolean) => void
+}) => (
+  <div className="flex items-center justify-between py-3">
+    <div className="flex flex-col">
+      <span className="font-label-md text-label-md text-on-surface">{label}</span>
+      <span className="text-body-sm text-on-surface-variant">{description}</span>
+    </div>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input 
+        type="checkbox" 
+        checked={checked} 
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer" 
+      />
+      <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+    </label>
+  </div>
+);
+
 export default function RequestSettings({ settings, onSave, isSaving, isActive }: RequestSettingsProps) {
   const [formData, setFormData] = useState({
     request_max_photo_mb: '5',
@@ -19,6 +47,7 @@ export default function RequestSettings({ settings, onSave, isSaving, isActive }
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       request_max_photo_mb: settings.request_max_photo_mb || '5',
       request_auto_assign: settings.request_auto_assign === 'true',
@@ -35,23 +64,7 @@ export default function RequestSettings({ settings, onSave, isSaving, isActive }
     onSave('request', sectionData);
   };
 
-  const ToggleRow = ({ label, description, dbKey }: { label: string, description: string, dbKey: keyof typeof formData }) => (
-    <div className="flex items-center justify-between py-3">
-      <div className="flex flex-col">
-        <span className="font-label-md text-label-md text-on-surface">{label}</span>
-        <span className="text-body-sm text-on-surface-variant">{description}</span>
-      </div>
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={formData[dbKey] as boolean} 
-          onChange={(e) => setFormData({ ...formData, [dbKey]: e.target.checked })}
-          className="sr-only peer" 
-        />
-        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
-      </label>
-    </div>
-  );
+
 
   return (
     <div id="request" className="bg-surface-container-lowest rounded-xl shadow-[0_12px_24px_-12px_rgba(30,58,138,0.06)] border border-outline-variant/40 overflow-hidden relative">
@@ -81,7 +94,8 @@ export default function RequestSettings({ settings, onSave, isSaving, isActive }
           <ToggleRow 
             label="Auto-Assign Requests" 
             description="Automatically assign incoming requests to available technicians based on specialization." 
-            dbKey="request_auto_assign" 
+            checked={formData.request_auto_assign}
+            onChange={(checked) => setFormData({ ...formData, request_auto_assign: checked })}
           />
 
           <div className="h-px w-full bg-outline-variant/30" />
@@ -89,7 +103,8 @@ export default function RequestSettings({ settings, onSave, isSaving, isActive }
           <ToggleRow 
             label="Allow Request Cancellation by User" 
             description="Allow users (students/faculty/staff) to cancel their own pending requests." 
-            dbKey="request_allow_user_cancel" 
+            checked={formData.request_allow_user_cancel}
+            onChange={(checked) => setFormData({ ...formData, request_allow_user_cancel: checked })}
           />
 
           <div className="h-px w-full bg-outline-variant/30" />
@@ -114,7 +129,8 @@ export default function RequestSettings({ settings, onSave, isSaving, isActive }
           <ToggleRow 
             label="Require Photo on Submission" 
             description="Make photo attachment mandatory when submitting a maintenance request." 
-            dbKey="request_require_photo" 
+            checked={formData.request_require_photo}
+            onChange={(checked) => setFormData({ ...formData, request_require_photo: checked })}
           />
         </div>
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import type { Prisma } from '@/generated/prisma/client';
+import type { Prisma } from '@prisma/client';
 
 async function verifyAdmin() {
   const supabase = await createClient();

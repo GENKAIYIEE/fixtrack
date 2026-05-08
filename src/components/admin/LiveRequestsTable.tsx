@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { MaintenanceRequest } from '@/generated/prisma/client';
+import type { MaintenanceRequest } from '@prisma/client';
 
 type LiveRequestsTableProps = {
   requests: Partial<MaintenanceRequest>[];

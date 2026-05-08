@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import type { MaintenanceRequest } from '@/generated/prisma/client';
+import type { MaintenanceRequest } from '@prisma/client';
 
 type PriorityQueueProps = {
   urgentRequests: Partial<MaintenanceRequest>[];

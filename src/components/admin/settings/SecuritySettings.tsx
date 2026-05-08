@@ -9,6 +9,34 @@ interface SecuritySettingsProps {
   isActive: boolean;
 }
 
+const ToggleRow = ({ 
+  label, 
+  description, 
+  checked,
+  onChange
+}: { 
+  label: string, 
+  description: string, 
+  checked: boolean,
+  onChange: (checked: boolean) => void
+}) => (
+  <div className="flex items-center justify-between py-3">
+    <div className="flex flex-col">
+      <span className="font-label-md text-label-md text-on-surface">{label}</span>
+      <span className="text-body-sm text-on-surface-variant">{description}</span>
+    </div>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input 
+        type="checkbox" 
+        checked={checked} 
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer" 
+      />
+      <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+    </label>
+  </div>
+);
+
 export default function SecuritySettings({ settings, onSave, isSaving, isActive }: SecuritySettingsProps) {
   const [formData, setFormData] = useState({
     security_session_timeout_mins: '60',
@@ -19,6 +47,7 @@ export default function SecuritySettings({ settings, onSave, isSaving, isActive 
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       security_session_timeout_mins: settings.security_session_timeout_mins || '60',
       security_min_password_length: settings.security_min_password_length || '8',
@@ -35,23 +64,7 @@ export default function SecuritySettings({ settings, onSave, isSaving, isActive 
     onSave('security', sectionData);
   };
 
-  const ToggleRow = ({ label, description, dbKey }: { label: string, description: string, dbKey: keyof typeof formData }) => (
-    <div className="flex items-center justify-between py-3">
-      <div className="flex flex-col">
-        <span className="font-label-md text-label-md text-on-surface">{label}</span>
-        <span className="text-body-sm text-on-surface-variant">{description}</span>
-      </div>
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={formData[dbKey] as boolean} 
-          onChange={(e) => setFormData({ ...formData, [dbKey]: e.target.checked })}
-          className="sr-only peer" 
-        />
-        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
-      </label>
-    </div>
-  );
+
 
   return (
     <div id="security" className="bg-surface-container-lowest rounded-xl shadow-[0_12px_24px_-12px_rgba(30,58,138,0.06)] border border-outline-variant/40 overflow-hidden relative">
@@ -98,7 +111,8 @@ export default function SecuritySettings({ settings, onSave, isSaving, isActive 
           <ToggleRow 
             label="Require Strong Password" 
             description="Enforce uppercase, lowercase, number, and special character requirements." 
-            dbKey="security_require_strong_password" 
+            checked={formData.security_require_strong_password}
+            onChange={(checked) => setFormData({ ...formData, security_require_strong_password: checked })}
           />
 
           <div className="h-px w-full bg-outline-variant/30" />
@@ -124,7 +138,8 @@ export default function SecuritySettings({ settings, onSave, isSaving, isActive 
             <ToggleRow 
               label="Enable Audit Logging" 
               description="Record all system actions in the audit log. Disabling this is not recommended." 
-              dbKey="security_audit_logging" 
+              checked={formData.security_audit_logging}
+              onChange={(checked) => setFormData({ ...formData, security_audit_logging: checked })}
             />
             {!formData.security_audit_logging && (
               <div className="text-error text-xs mt-2 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-200">
