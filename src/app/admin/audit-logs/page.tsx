@@ -6,27 +6,36 @@ import AuditLogsTable, { AuditLogRow } from '@/components/admin/AuditLogsTable';
 import AuditLogsPagination from '@/components/admin/AuditLogsPagination';
 import Toast from '@/components/shared/Toast';
 
+const LIMIT = 15;
+
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogRow[]>([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 15, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
   const [toastConfig, setToastConfig] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
+
+  // FIXED: BUG-07 — Separated pagination into primitive values to prevent the
+  // infinite re-render loop caused by setPagination(data.pagination) creating a
+  // new object reference that triggered the fetchLogs dependency on pagination.page.
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Handle Search Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-      setPagination(p => ({ ...p, page: 1 }));
+      setPage(1); // FIXED: BUG-07 — Reset to page 1 on search (primitive, no object reference churn)
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
 
+  // FIXED: BUG-07 — fetchLogs depends on primitive values (page, debouncedSearch, etc.)
+  // not on the pagination object, so it won't re-trigger when a new object is returned.
   const fetchLogs = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -35,22 +44,24 @@ export default function AuditLogsPage() {
       if (actionFilter) params.append('action', actionFilter);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
-      params.append('page', pagination.page.toString());
-      params.append('limit', pagination.limit.toString());
+      params.append('page', page.toString());
+      params.append('limit', LIMIT.toString());
 
       const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch logs');
-      
+
       const data = await res.json();
       setLogs(data.logs);
-      setPagination(data.pagination);
+      // FIXED: BUG-07 — Set primitive state values instead of whole pagination object
+      setTotal(data.pagination?.total ?? data.total ?? 0);
+      setTotalPages(data.pagination?.totalPages ?? data.totalPages ?? 1);
     } catch (error) {
       console.error(error);
       setToastConfig({ show: true, message: 'Failed to load audit logs', type: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, actionFilter, dateFrom, dateTo, pagination.page, pagination.limit]);
+  }, [debouncedSearch, actionFilter, dateFrom, dateTo, page]);
 
   useEffect(() => {
     fetchLogs();
@@ -58,17 +69,17 @@ export default function AuditLogsPage() {
 
   const handleActionChange = (val: string) => {
     setActionFilter(val);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
 
   const handleDateFromChange = (val: string) => {
     setDateFrom(val);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
 
   const handleDateToChange = (val: string) => {
     setDateTo(val);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
 
   const handleReset = () => {
@@ -77,64 +88,11 @@ export default function AuditLogsPage() {
     setActionFilter('');
     setDateFrom('');
     setDateTo('');
-    setPagination({ total: 0, page: 1, limit: 15, totalPages: 1 });
+    setPage(1);
   };
 
-  const formatTimestamp = (isoString: string) => {
-    const d = new Date(isoString);
-    return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
-  };
-
-  const formatAction = (action: string) => {
-    return action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  };
-
-  const handleExportCSV = async () => {
-    setIsExporting(true);
-    try {
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.append('search', debouncedSearch);
-      if (actionFilter) params.append('action', actionFilter);
-      if (dateFrom) params.append('dateFrom', dateFrom);
-      if (dateTo) params.append('dateTo', dateTo);
-      params.append('export', 'true');
-
-      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to export logs');
-      
-      const data = await res.json();
-      
-      const headers = ['Timestamp', 'User', 'Action', 'Record Type', 'Record ID', 'IP Address', 'Details'];
-      const rows = data.logs.map((log: AuditLogRow) => [
-        formatTimestamp(log.createdAt),
-        log.user ? `${log.user.firstName} ${log.user.lastName}` : 'System',
-        formatAction(log.action),
-        log.affectedRecordType || '',
-        log.affectedRecordId || '',
-        log.ipAddress || '',
-        log.details || ''
-      ]);
-
-      const csv = [headers, ...rows].map(r => r.map((v: unknown) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `FixTrack_AuditLogs_${Date.now()}.csv`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      setToastConfig({ show: true, message: 'Audit logs exported successfully', type: 'success' });
-    } catch (error) {
-      console.error('Export failed:', error);
-      setToastConfig({ show: true, message: 'Failed to export audit logs', type: 'error' });
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  // Build pagination object shape expected by AuditLogsPagination component
+  const paginationShape = { total, page, limit: LIMIT, totalPages };
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
@@ -146,22 +104,6 @@ export default function AuditLogsPage() {
             System Activity Trail &amp; Record History
           </p>
         </div>
-        
-        <button
-          onClick={handleExportCSV}
-          disabled={isExporting}
-          className="bg-surface-container-lowest border border-outline-variant px-4 py-2 rounded text-on-surface hover:bg-surface-container-low shadow-sm font-label-md text-label-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isExporting ? (
-            <svg className="animate-spin h-[18px] w-[18px] text-on-surface" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-            </svg>
-          ) : (
-            <span className="material-symbols-outlined text-[18px]">download</span>
-          )}
-          {isExporting ? 'Exporting...' : 'Export CSV'}
-        </button>
       </div>
 
       <AuditLogsFilterBar
@@ -182,8 +124,8 @@ export default function AuditLogsPage() {
           isLoading={isLoading}
         />
         <AuditLogsPagination
-          pagination={pagination}
-          onPageChange={(page) => setPagination(p => ({ ...p, page }))}
+          pagination={paginationShape}
+          onPageChange={(newPage) => setPage(newPage)}
         />
       </div>
 

@@ -7,13 +7,25 @@ import TechnicianAvailabilityBoard from '@/components/admin/TechnicianAvailabili
 import AssignmentConfirmModal from '@/components/admin/AssignmentConfirmModal';
 import Toast from '@/components/shared/Toast';
 
+// FIXED: QUALITY-03 — Replaced any[] with a proper Technician interface
+interface Technician {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialization: string;
+  activeTaskCount: number;
+  accountStatus: string;
+  avatarUrl?: string;
+  department?: string;
+}
+
 // Component that uses useSearchParams inside Suspense boundary
 function AssignmentsContent() {
   const searchParams = useSearchParams();
   const requestIdParam = searchParams.get('requestId');
 
   const [requests, setRequests] = useState<UnassignedRequest[]>([]);
-  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);

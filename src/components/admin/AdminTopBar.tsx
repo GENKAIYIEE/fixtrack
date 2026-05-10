@@ -13,9 +13,7 @@ export default function AdminTopBar({ user }: { user: UserProps }) {
     <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 border-b border-slate-200 shadow-sm bg-white/80 backdrop-blur-md flex justify-between items-center px-8 h-16">
       <div className="flex items-center gap-4">
         <h1 className="font-h2 text-h2 text-slate-900">FixTrack Monitoring</h1>
-        <span className="text-slate-500 font-label-md text-label-md px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
-
-        </span>
+        {/* FIXED: BUG-11 — Removed empty badge span that rendered as a visual artifact */}
       </div>
 
       <div className="flex items-center gap-6">

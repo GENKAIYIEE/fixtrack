@@ -57,8 +57,9 @@ export default function PriorityQueue({ urgentRequests }: PriorityQueueProps) {
                 <span>{getRelativeTime(req.createdAt)}</span>
               </div>
               
-              <Link 
-                href="/admin/assignments" 
+              {/* FIXED: Navigation — Pass requestId to assignments page so it can pre-select this request */}
+              <Link
+                href={`/admin/assignments?requestId=${req.id}`}
                 className="block text-center w-full bg-[#2563EB] text-white font-label-md text-label-md px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Assign Now

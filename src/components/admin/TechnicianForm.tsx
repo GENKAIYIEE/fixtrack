@@ -9,9 +9,9 @@ export interface TechnicianFormData {
   email: string;
   idNumber: string;
   department: string;
-  contactNumber: string;
+  contactNumber?: string;
   specialization: string;
-  password?: string;
+  password: string;
   accountStatus: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -34,39 +34,26 @@ const defaultForm: TechnicianFormData = {
   accountStatus: 'ACTIVE',
 };
 
-function generateSecurePassword(): string {
-  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lower = 'abcdefghijklmnopqrstuvwxyz';
-  const digits = '0123456789';
-  const symbols = '!@#$%^&*';
-  const all = upper + lower + digits + symbols;
 
-  const getRandom = (str: string) => str[Math.floor(Math.random() * str.length)];
-
-  let pwd = getRandom(upper) + getRandom(lower) + getRandom(digits) + getRandom(symbols);
-  for (let i = 4; i < 10; i++) {
-    pwd += getRandom(all);
-  }
-  return pwd.split('').sort(() => Math.random() - 0.5).join('');
-}
 
 export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitting }: TechnicianFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<TechnicianFormData>({ ...defaultForm, ...initialData });
   const [errors, setErrors] = useState<Partial<Record<keyof TechnicianFormData, string>>>({});
 
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
   useEffect(() => {
     if (initialData) {
       setForm((prev) => ({ ...prev, ...initialData }));
     }
   }, [initialData]);
-
-  // Generate password on create mount
-  useEffect(() => {
-    if (mode === 'create') {
-      setForm((prev) => ({ ...prev, password: generateSecurePassword() }));
-    }
-  }, [mode]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -97,21 +84,40 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
     if (!form.department.trim()) newErrors.department = 'Department is required.';
     if (!form.specialization) newErrors.specialization = 'Specialization is required.';
     
+    let isValid = true;
     if (mode === 'create') {
-      if (!form.password) {
-        newErrors.password = 'Password is required.';
-      } else if (form.password.length < 10) {
-        newErrors.password = 'Password must be at least 10 characters.';
+      // Password required
+      if (!password.trim()) {
+        setPasswordError('Password is required.');
+        isValid = false;
+      } else if (password.length < 8) {
+        setPasswordError('Password must be at least 8 characters.');
+        isValid = false;
+      } else {
+        setPasswordError('');
+      }
+
+      // Confirm password required and must match
+      if (!confirmPassword.trim()) {
+        setConfirmPasswordError('Please confirm your password.');
+        isValid = false;
+      } else if (password !== confirmPassword) {
+        setConfirmPasswordError('Passwords do not match.');
+        isValid = false;
+      } else {
+        setConfirmPasswordError('');
       }
     }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 0 && isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasSubmitted(true);
     if (!validate()) return;
-    await onSubmit(form);
+    await onSubmit({ ...form, password });
   };
 
   const inputBase =
@@ -290,40 +296,83 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-            {/* Temporary Password — create mode only */}
+            {/* Security & Access section — CREATE MODE ONLY */}
             {mode === 'create' && (
-              <div>
-                <label htmlFor="password" className={labelClass}>
-                  Temporary Password <span className="text-error">*</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="password"
-                    name="password"
-                    type="text"
-                    value={form.password}
-                    readOnly
-                    className="flex-1 px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg font-mono text-sm text-on-surface shadow-inner focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newPwd = generateSecurePassword();
-                      setForm((prev) => ({ ...prev, password: newPwd }));
-                      if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-                    }}
-                    className="flex items-center gap-2 bg-surface border border-outline-variant hover:bg-surface-variant text-on-surface rounded-lg px-4 py-2 font-label-md text-label-md transition-colors whitespace-nowrap"
-                  >
-                    <span className="material-symbols-outlined text-base">autorenew</span>
-                    Generate
-                  </button>
+              <>
+                {/* Create Password */}
+                <div className="space-y-2">
+                  <label className="block font-label-md text-label-md text-on-surface-variant">
+                    Create Password <span className="text-error">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (passwordError) setPasswordError('');
+                      }}
+                      placeholder="Enter password"
+                      className={`w-full rounded-lg border px-4 py-2.5 pr-12 bg-surface font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 transition-all
+                        ${hasSubmitted && passwordError
+                          ? 'border-error focus:border-error focus:ring-error'
+                          : 'border-outline-variant focus:border-secondary focus:ring-secondary'
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                  {hasSubmitted && passwordError && (
+                    <p className="text-error text-xs mt-1">{passwordError}</p>
+                  )}
                 </div>
-                {errors.password && <p className={errorClass}>{errors.password}</p>}
-              </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-2">
+                  <label className="block font-label-md text-label-md text-on-surface-variant">
+                    Confirm Password <span className="text-error">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (confirmPasswordError) setConfirmPasswordError('');
+                      }}
+                      placeholder="Re-enter password"
+                      className={`w-full rounded-lg border px-4 py-2.5 pr-12 bg-surface font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 transition-all
+                        ${hasSubmitted && confirmPasswordError
+                          ? 'border-error focus:border-error focus:ring-error'
+                          : 'border-outline-variant focus:border-secondary focus:ring-secondary'
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                  {hasSubmitted && confirmPasswordError && (
+                    <p className="text-error text-xs mt-1">{confirmPasswordError}</p>
+                  )}
+                </div>
+              </>
             )}
 
             {/* Account Status Toggle */}
-            <div className={mode === 'create' ? '' : 'md:col-span-2'}>
+            <div className="md:col-span-2">
               <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant">
                 <div>
                   <p className="font-label-md text-label-md text-on-surface">Account Status</p>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import RequestsFilterBar from '@/components/admin/RequestsFilterBar';
 import AllRequestsTable, { type RequestRow } from '@/components/admin/AllRequestsTable';
 import Pagination from '@/components/admin/Pagination';
+// FIXED: BUG-10 — Import the real RejectRequestModal component
+import RejectRequestModal from '@/components/admin/RejectRequestModal';
 
 // ── Page Component ────────────────────────────────────────────────────────────
 
@@ -31,6 +33,10 @@ export default function AdminRequestsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // FIXED: BUG-10 — Reject modal state (replaces alert() placeholder)
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+
   // ── Technicians list for More Filters ───────────────────────────────────────
   const [technicians, setTechnicians] = useState<
     { id: string; firstName: string; lastName: string }[]
@@ -53,6 +59,8 @@ export default function AdminRequestsPage() {
   }, []);
 
   // ── Core fetch function ──────────────────────────────────────────────────────
+  // FIXED: BUG-02 & BUG-03 — fetchRequests accepts an explicit pageOverride so it
+  // can be called with a known page number without waiting for React state to flush.
   const fetchRequests = useCallback(
     async (overridePage?: number) => {
       setIsLoading(true);
@@ -86,11 +94,20 @@ export default function AdminRequestsPage() {
     [page, search, statusFilter, urgencyFilter, buildingFilter, assignedToFilter, issueTypeFilter, dateFrom, dateTo]
   );
 
-  // ── On mount + page change ───────────────────────────────────────────────────
+  // FIXED: BUG-07 — Trigger token for reset; toggling this causes a re-fetch with
+  // cleared filters after React has flushed all state updates.
+  const [shouldFetch, setShouldFetch] = useState(false);
+
+  // FIXED: BUG-02 — Listen to shouldFetch toggle instead of calling fetchRequests
+  // inside setTimeout (which captured stale closure values).
   useEffect(() => {
-    fetchRequests();
+    fetchRequests(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [shouldFetch]);
+
+  // FIXED: BUG-03 — Removed the broad [page] useEffect that caused double-fetches
+  // when filter handlers also called fetchRequests(1). Page changes are now handled
+  // exclusively via handlePageChange below.
 
   // ── Filter handlers ──────────────────────────────────────────────────────────
   const handleApply = () => {
@@ -99,6 +116,8 @@ export default function AdminRequestsPage() {
     setPage(1);
   };
 
+  // FIXED: BUG-02 — Reset now toggles shouldFetch instead of using setTimeout to
+  // avoid stale closure capturing old filter values.
   const handleReset = () => {
     setSearch('');
     setStatusFilter('');
@@ -110,14 +129,17 @@ export default function AdminRequestsPage() {
     setDateTo('');
     setSelectedIds([]);
     setPage(1);
-    // Re-fetch with no filters
-    setTimeout(() => fetchRequests(1), 0);
+    // Flip the token — the useEffect above will call fetchRequests(1) after flush
+    setShouldFetch(prev => !prev);
   };
 
+  // FIXED: BUG-03 — Page changes call fetchRequests directly with the new page
+  // so there is no double-fetch from a separate [page] useEffect.
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     setSelectedIds([]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    fetchRequests(newPage);
   };
 
   // ── Selection handlers ───────────────────────────────────────────────────────
@@ -140,25 +162,32 @@ export default function AdminRequestsPage() {
     router.push(`/admin/assignments?requestId=${id}`);
   };
 
+  // FIXED: BUG-10 — Replaced alert() placeholder with real modal open
   const handleReject = (id: string) => {
-    // Screen 23 (Reject/Cancel Modal) — placeholder until that screen is built
-    console.log('[Reject] Request ID:', id);
-    alert(`Reject Modal — Screen 23 not yet built. Request ID: ${id}`);
+    setRejectingRequestId(id);
+    setRejectModalOpen(true);
   };
 
-  // ── Bulk export (placeholder) ────────────────────────────────────────────────
-  const handleExport = () => {
-    console.log('[Export] All requests');
-  };
+  // ── Derive the request object needed by RejectRequestModal ───────────────────
+  const rejectingRequest = rejectingRequestId
+    ? requests.find((r) => r.id === rejectingRequestId) ?? null
+    : null;
 
-  const handleExportSelected = () => {
-    console.log('[Export Selected]', selectedIds);
-  };
-
-  const handleBulkAssign = () => {
-    console.log('[Bulk Assign]', selectedIds);
-    alert(`Bulk Assign — ${selectedIds.length} request(s) selected. Assign UI coming in Screen 12.`);
-  };
+  // Map RequestRow → the shape RejectRequestModal expects
+  const rejectModalRequest = rejectingRequest
+    ? {
+        id: rejectingRequest.id,
+        requestCode: rejectingRequest.requestCode,
+        submitter: {
+          firstName: rejectingRequest.submitter?.firstName ?? '',
+          lastName: rejectingRequest.submitter?.lastName ?? '',
+        },
+        issueType: rejectingRequest.issueType as 'HVAC' | 'ELECTRICAL' | 'PLUMBING' | 'CARPENTRY' | 'STRUCTURAL' | 'OTHERS',
+        urgencyLevel: rejectingRequest.urgencyLevel as 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT',
+        building: rejectingRequest.building as 'IT_BUILDING' | 'ADMIN_BUILDING' | 'LIBRARY' | 'GYMNASIUM' | 'CANTEEN' | 'DORMITORY' | 'OTHERS',
+        roomNumber: rejectingRequest.roomNumber,
+      }
+    : null;
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -172,26 +201,6 @@ export default function AdminRequestsPage() {
           <p className="text-sm text-slate-500 mt-1">
             Manage and track all facility maintenance tickets.
           </p>
-        </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors shadow-sm"
-            id="btn-export-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">export_notes</span>
-            Export
-          </button>
-          {/* Bulk Assign */}
-          <button
-            onClick={handleBulkAssign}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-            id="btn-bulk-assign"
-          >
-            <span className="material-symbols-outlined text-[18px]">group_add</span>
-            Bulk Assign
-          </button>
         </div>
       </div>
 
@@ -219,39 +228,7 @@ export default function AdminRequestsPage() {
       />
 
       {/* ── Bulk Action Bar — appears when checkboxes are selected ── */}
-      {selectedIds.length > 0 && (
-        <div className="mb-4 px-5 py-3 bg-[#DBEAFE] border border-[#93c5fd] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <p className="text-sm font-semibold text-[#1E3A8A]">
-            <span className="material-symbols-outlined text-[16px] mr-1 align-middle">check_circle</span>
-            {selectedIds.length} {selectedIds.length === 1 ? 'request' : 'requests'} selected
-          </p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleBulkAssign}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              id="btn-bulk-assign-selection"
-            >
-              <span className="material-symbols-outlined text-[16px]">group_add</span>
-              Bulk Assign
-            </button>
-            <button
-              onClick={handleExportSelected}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
-              id="btn-export-selected"
-            >
-              <span className="material-symbols-outlined text-[16px]">export_notes</span>
-              Export Selected
-            </button>
-            <button
-              onClick={() => setSelectedIds([])}
-              className="text-sm text-slate-500 hover:text-slate-700 font-medium underline underline-offset-2 transition-colors"
-              id="btn-clear-selection"
-            >
-              Clear Selection
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* ── Table ── */}
       <AllRequestsTable
@@ -275,6 +252,22 @@ export default function AdminRequestsPage() {
           onPageChange={handlePageChange}
         />
       )}
+
+      {/* FIXED: BUG-10 — Real RejectRequestModal instead of alert() */}
+      <RejectRequestModal
+        isOpen={rejectModalOpen}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setRejectingRequestId(null);
+        }}
+        onConfirmed={() => {
+          setRejectModalOpen(false);
+          setRejectingRequestId(null);
+          // Refresh list so rejected request updates in place
+          fetchRequests(page);
+        }}
+        request={rejectModalRequest}
+      />
     </div>
   );
 }
