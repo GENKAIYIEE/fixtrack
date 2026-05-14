@@ -7,12 +7,13 @@ import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import AdminActionCard from '@/components/admin/AdminActionCard';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
+import { RequestStatus } from '@prisma/client';
 
 // FIXED: QUALITY-03 — Replaced any type for request state with proper interface
 interface RequestDetail {
   id: string;
   requestCode: string;
-  status: string;
+  status: RequestStatus;
   urgencyLevel: string;
   priorityLevel: string;
   issueType: string;
