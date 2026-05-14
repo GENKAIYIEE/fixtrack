@@ -21,6 +21,7 @@ interface RequestDetail {
   roomNumber: string;
   description: string;
   adminNotes?: string;
+  repairNote?: string;
   submittedBy: { firstName: string; lastName: string; department?: string };
   assignedTo?: { firstName: string; lastName: string; specialization?: string; activeTaskCount?: number };
   statusHistory: any[]; // Using any[] here just to keep the interface concise, or could define StatusHistoryEntry
