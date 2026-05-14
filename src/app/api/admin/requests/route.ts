@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
 async function verifyAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
+  const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
 
-  const user = await prisma.user.findUnique({
-    where: { id: authUser.id },
-    select: { id: true, role: true },
-  });
+  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
 
-  if (!user) return { error: 'Unauthorized', status: 401 as const };
-  if (user.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
-
-  return { userId: user.id };
+  return { userId: authUser.id };
 }
 
 // ── GET — paginated, filtered requests ───────────────────────────────────────
@@ -152,6 +145,12 @@ export async function PATCH(request: NextRequest) {
   try {
     const now = new Date();
 
+    // Fetch the target requests to get requestCode and current status for history/logs
+    const targetRequests = await prisma.maintenanceRequest.findMany({
+      where: { id: { in: requestIds } },
+      select: { id: true, requestCode: true, status: true },
+    });
+
     // Update all target requests
     await prisma.maintenanceRequest.updateMany({
       where: { id: { in: requestIds } },
@@ -175,9 +174,47 @@ export async function PATCH(request: NextRequest) {
       skipDuplicates: true,
     });
 
+    // FIXED: BUG-13 — Add missing StatusHistory, AuditLog, and Notifications
+    // that the single-assign flow creates but the bulk path was silently skipping.
+    for (const req of targetRequests) {
+      // Status history entry per request
+      await prisma.requestStatusHistory.create({
+        data: {
+          requestId: req.id,
+          changedById: auth.userId,
+          previousStatus: req.status,
+          newStatus: 'ONGOING',
+          remarks: `Bulk assigned to technician ${technicianId}`,
+        },
+      });
+
+      // Audit log entry per request
+      await prisma.auditLog.create({
+        data: {
+          userId: auth.userId,
+          action: 'TASK_ASSIGNED',
+          affectedRecordId: req.requestCode,
+          affectedRecordType: 'MaintenanceRequest',
+          details: `Bulk assignment: ${req.requestCode} assigned to technician ${technicianId}`,
+        },
+      });
+
+      // Notification for the assigned technician
+      await prisma.notification.create({
+        data: {
+          userId: technicianId,
+          type: 'TASK_ASSIGNED',
+          title: 'New Task Assigned',
+          message: `${req.requestCode} has been assigned to you via bulk assignment.`,
+          requestId: req.id,
+        },
+      });
+    }
+
     return NextResponse.json({ success: true, updated: requestIds.length });
   } catch (error) {
     console.error('[PATCH /api/admin/requests]', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

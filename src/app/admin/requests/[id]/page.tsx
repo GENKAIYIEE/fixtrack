@@ -6,11 +6,32 @@ import RequestInfoCard from '@/components/admin/RequestInfoCard';
 import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import AdminActionCard from '@/components/admin/AdminActionCard';
 import ActivityLog from '@/components/admin/ActivityLog';
+import RejectRequestModal from '@/components/admin/RejectRequestModal';
+
+// FIXED: QUALITY-03 — Replaced any type for request state with proper interface
+interface RequestDetail {
+  id: string;
+  requestCode: string;
+  status: string;
+  urgencyLevel: string;
+  priorityLevel: string;
+  issueType: string;
+  building: string;
+  roomNumber: string;
+  description: string;
+  adminNotes?: string;
+  submittedBy: { firstName: string; lastName: string; department?: string };
+  assignedTo?: { firstName: string; lastName: string; specialization?: string; activeTaskCount?: number };
+  statusHistory: any[]; // Using any[] here just to keep the interface concise, or could define StatusHistoryEntry
+  createdAt: string;
+  submitter?: any;
+}
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [request, setRequest] = useState<any>(null);
+  const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   const fetchRequest = useCallback(async () => {
     setLoading(true);
@@ -75,9 +96,24 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
 
         {/* Right Column (Actions) */}
         <div className="lg:col-span-1">
-          <AdminActionCard request={request} onRefresh={fetchRequest} />
+          <AdminActionCard request={request} onRefresh={fetchRequest} onReject={() => setShowRejectModal(true)} />
         </div>
       </div>
+
+      <RejectRequestModal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        onConfirmed={() => { setShowRejectModal(false); fetchRequest(); }}
+        request={request ? {
+          id: request.id,
+          requestCode: request.requestCode,
+          submitter: request.submitter,
+          issueType: request.issueType,
+          urgencyLevel: request.urgencyLevel,
+          building: request.building,
+          roomNumber: request.roomNumber,
+        } : null}
+      />
     </div>
   );
 }

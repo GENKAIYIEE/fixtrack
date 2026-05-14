@@ -65,8 +65,13 @@ export default function UserManagementPage() {
     setPagination(p => ({ ...p, page: 1 }));
   };
 
+  // FIXED: BUG-04 — Route to the correct edit page based on actual user role
   const handleEdit = (user: UserRow) => {
-    router.push(`/admin/users/technicians/${user.id}/edit`);
+    if (user.role === 'TECHNICIAN') {
+      router.push(`/admin/users/technicians/${user.id}/edit`);
+    } else {
+      router.push(`/admin/users/${user.id}/edit`);
+    }
   };
 
   const handleDeactivate = (user: UserRow) => {

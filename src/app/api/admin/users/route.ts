@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import bcryptjs from 'bcryptjs';
 import type { Prisma } from '@prisma/client';
 
 async function verifyAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
+  const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
 
-  const user = await prisma.user.findUnique({
-    where: { id: authUser.id },
-    select: { id: true, role: true },
-  });
+  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
 
-  if (!user) return { error: 'Unauthorized', status: 401 as const };
-  if (user.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
-
-  return { userId: user.id };
+  return { userId: authUser.id };
 }
 
 export async function GET(request: NextRequest) {
@@ -140,7 +133,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcryptjs.hash(password, 12);
 
     // Create user
     const newUser = await prisma.user.create({

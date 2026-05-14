@@ -1,25 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { RequestStatus, PriorityLevel, AuditAction, NotifType } from '@prisma/client';
 
 async function verifyAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
+  const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
 
-  const user = await prisma.user.findUnique({
-    where: { id: authUser.id },
-    select: { id: true, role: true },
-  });
+  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
 
-  if (!user) return { error: 'Unauthorized', status: 401 as const };
-  if (user.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
-
-  return { userId: user.id };
+  return { userId: authUser.id };
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -179,48 +172,62 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       return NextResponse.json({ success: true, updatedReq });
 
     } else if (action === 'reject') {
-      const { rejectReason } = body;
-      
-      const newStatus = 'REJECTED';
-      await prisma.maintenanceRequest.update({
-        where: { id },
-        data: {
-          status: newStatus,
-          rejectionReason: rejectReason,
-          reviewedById: auth.userId,
-          reviewedAt: now,
-        },
-      });
+      const { rejectionReason } = body;
 
-      await prisma.requestStatusHistory.create({
-        data: {
-          requestId: id,
-          changedById: auth.userId,
-          previousStatus,
-          newStatus,
-          remarks: `Request Rejected. Reason: ${rejectReason}`,
-        }
-      });
+      if (!rejectionReason || !String(rejectionReason).trim()) {
+        return NextResponse.json({ error: 'Rejection reason is required', message: 'Rejection reason is required.' }, { status: 400 });
+      }
 
-      await prisma.auditLog.create({
-        data: {
-          userId: auth.userId,
-          action: 'REQUEST_REJECTED',
-          affectedRecordId: id,
-          affectedRecordType: 'MaintenanceRequest',
-          details: `Request rejected. Reason: ${rejectReason}`,
-        }
-      });
+      // Only PENDING requests may be rejected
+      if (previousStatus !== 'PENDING') {
+        return NextResponse.json(
+          { error: 'Conflict', message: `Cannot reject a request with status ${previousStatus}.` },
+          { status: 409 }
+        );
+      }
 
-      await prisma.notification.create({
-        data: {
-          userId: currentRequest.submittedById,
-          type: 'REQUEST_REJECTED',
-          title: 'Request Rejected',
-          message: `Your request REQ-${currentRequest.requestCode} has been rejected.`,
-          requestId: id
-        }
-      });
+      const trimmedReason = String(rejectionReason).trim();
+      const newStatus: RequestStatus = 'REJECTED';
+
+      await prisma.$transaction([
+        prisma.maintenanceRequest.update({
+          where: { id },
+          data: {
+            status: newStatus,
+            rejectionReason: trimmedReason,
+            reviewedById: auth.userId,
+            reviewedAt: now,
+            updatedAt: now,
+          },
+        }),
+        prisma.requestStatusHistory.create({
+          data: {
+            requestId: id,
+            changedById: auth.userId,
+            previousStatus,
+            newStatus,
+            remarks: trimmedReason,
+          },
+        }),
+        prisma.notification.create({
+          data: {
+            userId: currentRequest.submittedById,
+            type: 'REQUEST_REJECTED' as NotifType,
+            title: 'Your Request Has Been Rejected',
+            message: `Your maintenance request ${currentRequest.requestCode} has been rejected. Reason: ${trimmedReason}`,
+            requestId: id,
+          },
+        }),
+        prisma.auditLog.create({
+          data: {
+            userId: auth.userId,
+            action: 'REQUEST_REJECTED' as AuditAction,
+            affectedRecordId: id,
+            affectedRecordType: 'MaintenanceRequest',
+            details: `Request ${currentRequest.requestCode} rejected. Reason: ${trimmedReason}`,
+          },
+        }),
+      ]);
 
       return NextResponse.json({ success: true });
 

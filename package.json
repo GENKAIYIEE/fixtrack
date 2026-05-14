@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
+    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
+    "seed:technician": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed-technician-demo.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
@@ -22,6 +23,7 @@
     "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
     "next": "16.2.4",
+    "next-auth": "^4.24.14",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",

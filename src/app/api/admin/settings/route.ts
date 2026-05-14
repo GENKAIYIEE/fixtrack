@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const session = await getServerSession(authOptions);
+    const authUser = session?.user;
 
     if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,8 +33,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const session = await getServerSession(authOptions);
+    const authUser = session?.user;
 
     if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -72,13 +73,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // Log to AuditLog
+    // FIXED: BUG-12 — Added [SETTINGS] prefix to details and affectedRecordId so
+    // these entries are distinguishable from genuine USER_UPDATED events in the audit log.
+    // (AuditAction enum has no SETTINGS_UPDATED variant, so USER_UPDATED is reused.)
     await prisma.auditLog.create({
       data: {
         userId: authUser.id,
         action: 'USER_UPDATED',
-        details: 'System settings updated',
+        details: `[SETTINGS] System settings updated by admin`,
         affectedRecordType: 'SystemSettings',
+        affectedRecordId: Object.keys(settings).join(', '),
       }
     });
 

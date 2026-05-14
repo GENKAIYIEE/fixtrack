@@ -1,13 +1,21 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import type { MaintenanceRequest } from '@prisma/client';
 
+// FIXED: BUG-08 — Added onApprove, onAssign, onReject props to replace alert() placeholders
 type LiveRequestsTableProps = {
   requests: Partial<MaintenanceRequest>[];
+  onApprove?: (id: string) => void;
+  onAssign?: (id: string) => void;
+  onReject?: (id: string) => void;
 };
 
-export default function LiveRequestsTable({ requests }: LiveRequestsTableProps) {
+export default function LiveRequestsTable({ requests, onApprove, onAssign, onReject }: LiveRequestsTableProps) {
+  // FIXED: BUG-09 — useRouter for View All navigation
+  const router = useRouter();
+
   const getBadgeClasses = (statusOrUrgency: string) => {
     const val = statusOrUrgency.toUpperCase();
     switch (val) {
@@ -33,14 +41,6 @@ export default function LiveRequestsTable({ requests }: LiveRequestsTableProps) 
     return building.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const handleAction = (action: string, id?: string) => {
-    console.log(`${action} request ${id}`);
-    alert(`${action} request ${id} - This feature will be implemented in Screen 11.`);
-  };
-
-  // Status column logic based on HTML reference, some are Urgency, some are Status.
-  // We'll prefer status, but if it's PENDING and Urgency is URGENT, maybe show URGENT.
-  // We'll just show Status unless specified otherwise. Let's show Status or Urgency based on design.
   const getDisplayLabel = (req: Partial<MaintenanceRequest>) => {
     if (req.urgencyLevel === 'URGENT') return 'Urgent';
     if (req.status === 'PENDING') return 'Pending';
@@ -51,7 +51,11 @@ export default function LiveRequestsTable({ requests }: LiveRequestsTableProps) 
     <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] overflow-hidden border border-slate-100">
       <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
         <h3 className="font-h2 text-h2 text-slate-900">Live Requests</h3>
-        <button className="text-[#2563EB] font-label-md text-label-md hover:underline flex items-center gap-1">
+        {/* FIXED: BUG-09 — Added onClick navigation to View All button */}
+        <button
+          onClick={() => router.push('/admin/requests')}
+          className="text-[#2563EB] font-label-md text-label-md hover:underline flex items-center gap-1"
+        >
           View All <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
@@ -70,7 +74,7 @@ export default function LiveRequestsTable({ requests }: LiveRequestsTableProps) 
             {requests.map((req, index) => {
               const label = getDisplayLabel(req);
               const labelClasses = getBadgeClasses(label);
-              
+
               return (
                 <tr key={req.id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F1F5F9]'} hover:bg-[#DBEAFE] transition-colors group`}>
                   <td className="px-6 py-4 font-semibold text-slate-900">{req.requestCode}</td>
@@ -83,24 +87,27 @@ export default function LiveRequestsTable({ requests }: LiveRequestsTableProps) 
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleAction('Approve', req.id)}
-                        className="bg-emerald-500 text-white p-1.5 rounded-md hover:bg-emerald-600 shadow-sm" 
-                        title="Approve"
+                      {/* FIXED: BUG-08 — Approve calls onApprove prop (navigates to request detail) */}
+                      <button
+                        onClick={() => req.id && onApprove?.(req.id)}
+                        className="bg-emerald-500 text-white p-1.5 rounded-md hover:bg-emerald-600 shadow-sm"
+                        title="View & Approve"
                       >
                         <span className="material-symbols-outlined text-[18px]">check</span>
                       </button>
-                      <button 
-                        onClick={() => handleAction('Assign', req.id)}
-                        className="bg-[#2563EB] text-white p-1.5 rounded-md hover:bg-blue-700 shadow-sm" 
-                        title="Assign"
+                      {/* FIXED: BUG-08 — Assign calls onAssign prop (navigates to assignments page) */}
+                      <button
+                        onClick={() => req.id && onAssign?.(req.id)}
+                        className="bg-[#2563EB] text-white p-1.5 rounded-md hover:bg-blue-700 shadow-sm"
+                        title="Assign Technician"
                       >
                         <span className="material-symbols-outlined text-[18px]">person_add</span>
                       </button>
-                      <button 
-                        onClick={() => handleAction('Reject', req.id)}
-                        className="bg-red-500 text-white p-1.5 rounded-md hover:bg-red-600 shadow-sm" 
-                        title="Reject"
+                      {/* FIXED: BUG-08 — Reject calls onReject prop (opens modal) */}
+                      <button
+                        onClick={() => req.id && onReject?.(req.id)}
+                        className="bg-red-500 text-white p-1.5 rounded-md hover:bg-red-600 shadow-sm"
+                        title="Reject Request"
                       >
                         <span className="material-symbols-outlined text-[18px]">close</span>
                       </button>

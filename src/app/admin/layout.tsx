@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminTopBar from '@/components/admin/AdminTopBar';
 
@@ -9,21 +9,21 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
 
-  if (!authUser) {
+  if (!session?.user) {
     redirect('/login');
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: authUser.id },
-    select: { role: true, firstName: true, lastName: true },
-  });
-
-  if (!user || user.role !== 'ADMIN') {
+  if (session.user.role !== 'ADMIN') {
     redirect('/login');
   }
+
+  const user = {
+    firstName: session.user.firstName,
+    lastName: session.user.lastName,
+    role: session.user.role,
+  };
 
   return (
     <div className="bg-[#F1F5F9] text-slate-900 font-body text-body min-h-screen flex antialiased">

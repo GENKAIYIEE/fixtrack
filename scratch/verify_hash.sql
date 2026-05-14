@@ -1,0 +1,1 @@
+SELECT email, "passwordHash", (LEFT("passwordHash", 3) = '$2a' OR LEFT("passwordHash", 3) = '$2b') as is_valid_bcrypt, LENGTH("passwordHash") as hash_length FROM "User" ORDER BY "createdAt" DESC LIMIT 1;

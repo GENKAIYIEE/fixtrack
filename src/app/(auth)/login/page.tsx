@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { signIn, getSession } from 'next-auth/react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,44 +20,39 @@ export default function LoginPage() {
     setErrorMessage('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
         email,
         password,
+        redirect: false
       });
 
-      if (error) {
-        setErrorMessage(error.message);
+      if (result?.error) {
+        setErrorMessage('Invalid email or password. Please try again.');
+        setIsLoading(false);
         return;
       }
 
-      if (data.user) {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: data.user.id }),
-        });
+      if (result?.ok) {
+  // Small delay to ensure authentication cookie is set before fetching the session
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const session = await getSession();
+  const role = session?.user?.role;
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          setErrorMessage(result.message || 'An error occurred during login validation.');
-          // Sign out the user if verification fails
-          await supabase.auth.signOut();
-          return;
-        }
-
-        const role = result.role;
-
-        if (role === 'ADMIN') {
-          router.push('/admin/dashboard');
-        } else if (role === 'TECHNICIAN') {
-          router.push('/technician/dashboard');
-        } else {
-          router.push('/dashboard');
-        }
-      }
+  if (role === 'ADMIN') {
+    router.replace('/admin/dashboard');
+  } else if (role === 'TECHNICIAN') {
+    router.replace('/technician/dashboard');
+  } else if (role) {
+    router.replace('/dashboard');
+  } else {
+    setErrorMessage('Unable to determine user role. Please try again.');
+    return;
+  }
+  // Refresh to ensure session is recognized on the new page
+  router.refresh();
+}
     } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred');
+      setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

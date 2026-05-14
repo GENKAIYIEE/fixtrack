@@ -3,19 +3,51 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-interface AdminActionCardProps {
-  request: any;
-  onRefresh: () => void;
+// FIXED: QUALITY-03 — Replaced `request: any` with a proper typed interface
+interface RequestDetail {
+  id: string;
+  requestCode: string;
+  status: string;
+  urgencyLevel: string;
+  priorityLevel: string;
+  issueType: string;
+  building: string;
+  roomNumber: string;
+  description: string;
+  adminNotes?: string;
+  assignedToId?: string;
+  assignee?: {
+    firstName: string;
+    lastName: string;
+    specialization?: string;
+    avatarUrl?: string;
+  } | null;
 }
 
-export default function AdminActionCard({ request, onRefresh }: AdminActionCardProps) {
+// FIXED: QUALITY-03 — Replaced any[] for technicians with proper Technician interface
+interface Technician {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialization?: string;
+  avatarUrl?: string;
+  activeTaskCount: number;
+}
+
+interface AdminActionCardProps {
+  request: RequestDetail;
+  onRefresh: () => void;
+  onReject?: () => void;
+}
+
+export default function AdminActionCard({ request, onRefresh, onReject }: AdminActionCardProps) {
   const [priority, setPriority] = useState(request.priorityLevel || 'NORMAL');
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || '');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Technician assignment state
   const [showTechSelector, setShowTechSelector] = useState(false);
-  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
 
   // Modal state
@@ -235,9 +267,10 @@ export default function AdminActionCard({ request, onRefresh }: AdminActionCardP
                         <p className="text-sm font-bold">{tech.firstName} {tech.lastName}</p>
                         <p className="text-xs opacity-80">{tech.specialization}</p>
                       </div>
-                      {/* Workload Count - dummy for now if not provided */}
+                      {/* FIXED: BUG-05 — Use activeTaskCount (flat property from /api/users)
+                           instead of tech._count?.assignedRequests which is always undefined */}
                       <span className="text-xs font-bold px-2 py-1 bg-surface-container rounded-full">
-                        {tech._count?.assignedRequests || 0} tasks
+                        {tech.activeTaskCount || 0} tasks
                       </span>
                     </div>
                   ))}
@@ -279,7 +312,7 @@ export default function AdminActionCard({ request, onRefresh }: AdminActionCardP
               Approve Action Plan
             </button>
             <button
-              onClick={() => openModal('reject')}
+              onClick={() => onReject ? onReject() : openModal('reject')}
               disabled={isUpdating}
               className="w-full flex items-center justify-center gap-2 py-3 bg-error text-white font-bold rounded-full hover:opacity-90 transition-opacity"
             >
