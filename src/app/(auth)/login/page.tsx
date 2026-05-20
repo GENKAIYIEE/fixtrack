@@ -42,6 +42,8 @@ export default function LoginPage() {
     router.replace('/admin/dashboard');
   } else if (role === 'TECHNICIAN') {
     router.replace('/technician/dashboard');
+  } else if (role === 'USER') {
+    router.replace('/dashboard');
   } else if (role) {
     router.replace('/dashboard');
   } else {

@@ -58,7 +58,7 @@ export default function UsersFilterBar({
           >
             <option value="">All Roles</option>
             <option value="ADMIN">ADMIN</option>
-            <option value="STUDENT">STUDENT</option>
+            <option value="USER">USER</option>
             <option value="FACULTY">FACULTY</option>
             <option value="STAFF">STAFF</option>
             <option value="TECHNICIAN">TECHNICIAN</option>

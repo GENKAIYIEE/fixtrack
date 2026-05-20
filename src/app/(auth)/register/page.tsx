@@ -80,7 +80,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-surface-container-lowest overflow-hidden">
+    <div className="flex h-screen w-full bg-surface-container-lowest overflow-hidden">
       {/* Left Panel (Brand / Image) */}
       <div className="hidden lg:flex w-[45%] bg-primary-container relative flex-col justify-between p-12 overflow-hidden">
         <div className="absolute inset-0 w-full h-full opacity-40 mix-blend-overlay">
@@ -107,23 +107,17 @@ export default function RegisterPage() {
       </div>
       
       {/* Right Panel (Registration Form) */}
-      <div className="w-full lg:w-[55%] min-h-screen flex flex-col justify-center p-12 overflow-y-auto">
-        <div className="w-full max-w-[512px] mx-auto pb-12 pt-8">
+      <div className="w-full lg:w-[55%] h-screen flex flex-col justify-center p-8 overflow-hidden">
+        <div className="w-full max-w-[512px] mx-auto py-6">
           <div className="mb-8">
             <h1 className="font-sans text-h1 text-on-surface mb-2">Create Your Account</h1>
             <p className="font-sans text-body text-on-surface-variant">Fill in your details to request system access</p>
           </div>
           
-          {/* Info Box */}
-          <div className="mb-8 bg-tertiary-fixed/30 border border-tertiary-fixed rounded-lg p-4 flex items-start gap-4">
-            <span className="material-symbols-outlined text-tertiary-container mt-1">info</span>
-            <p className="font-body-sm text-body-sm text-on-tertiary-fixed-variant leading-snug">
-              Registration is open to Students, Faculty, and Staff of the Polytechnic College of La Union. Your account will be activated immediately upon registration.
-            </p>
-          </div>
+
           
           {/* Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* First & Last Name */}
             <div className="flex flex-col sm:flex-row gap-6">
               <div className="flex-1 flex flex-col gap-2">
@@ -202,11 +196,13 @@ export default function RegisterPage() {
                   disabled={isLoading || successMessage !== null}
                 >
                   <option disabled value="">Select department</option>
-                  <option value="CIT">CIT</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="Sciences">Sciences</option>
-                  <option value="Administration">Administration</option>
-                  <option value="Maintenance">Maintenance</option>
+                  <option value="BSIT">BSIT</option>
+                  <option value="BEED/BSE">BEED/BSE</option>
+                  <option value="BSBA">BSBA</option>
+                  <option value="BSHM">BSHM</option>
+                  <option value="BSTM">BSTM</option>
+                  <option value="MARINE">MARINE</option>
+                  <option value="CRIM">CRIM</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
               </div>

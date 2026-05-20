@@ -12,14 +12,15 @@ import RejectRequestModal from '@/components/admin/RejectRequestModal';
 interface RequestDetail {
   id: string;
   requestCode: string;
-  status: string;
+  status: any;
   urgencyLevel: string;
   priorityLevel: string;
-  issueType: string;
+  issueType: any;
   building: string;
   roomNumber: string;
   description: string;
   adminNotes?: string;
+  repairNote?: any;
   submittedBy: { firstName: string; lastName: string; department?: string };
   assignedTo?: { firstName: string; lastName: string; specialization?: string; activeTaskCount?: number };
   statusHistory: any[]; // Using any[] here just to keep the interface concise, or could define StatusHistoryEntry
@@ -104,15 +105,15 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
         onConfirmed={() => { setShowRejectModal(false); fetchRequest(); }}
-        request={request ? {
+        request={request ? ({
           id: request.id,
           requestCode: request.requestCode,
-          submitter: request.submitter,
+          submitter: request.submitter || request.submittedBy,
           issueType: request.issueType,
           urgencyLevel: request.urgencyLevel,
           building: request.building,
           roomNumber: request.roomNumber,
-        } : null}
+        } as any) : null}
       />
     </div>
   );
