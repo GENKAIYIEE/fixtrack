@@ -7,25 +7,26 @@ import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import AdminActionCard from '@/components/admin/AdminActionCard';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
+import { RequestStatus, IssueType, UrgencyLevel, Building } from '@prisma/client';
 
 // FIXED: QUALITY-03 — Replaced any type for request state with proper interface
 interface RequestDetail {
   id: string;
   requestCode: string;
-  status: any;
-  urgencyLevel: string;
+  status: RequestStatus;
+  urgencyLevel: UrgencyLevel;
   priorityLevel: string;
-  issueType: any;
-  building: string;
+  issueType: IssueType;
+  building: Building;
   roomNumber: string;
   description: string;
   adminNotes?: string;
-  repairNote?: any;
+  repairNote?: string;
   submittedBy: { firstName: string; lastName: string; department?: string };
   assignedTo?: { firstName: string; lastName: string; specialization?: string; activeTaskCount?: number };
   statusHistory: any[]; // Using any[] here just to keep the interface concise, or could define StatusHistoryEntry
   createdAt: string;
-  submitter?: any;
+  submitter?: { firstName: string; lastName: string; };
 }
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -108,7 +109,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         request={request ? ({
           id: request.id,
           requestCode: request.requestCode,
-          submitter: request.submitter || request.submittedBy,
+          submitter: request.submitter || request.submittedBy || { firstName: 'Unknown', lastName: '' },
           issueType: request.issueType,
           urgencyLevel: request.urgencyLevel,
           building: request.building,
