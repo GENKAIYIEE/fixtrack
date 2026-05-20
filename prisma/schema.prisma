@@ -1,22 +1,3 @@
-// ================================================================
-// FIXTRACK — PRISMA DATABASE SCHEMA
-// Maintenance Request Monitoring System
-// Polytechnic College of La Union
-// ================================================================
-// Tech Stack: Next.js + Supabase PostgreSQL + Prisma ORM
-// Last Updated: 2026-05-06
-//
-// MODELS (8):
-// 1. User                  — All system users across all roles
-// 2. MaintenanceRequest    — Core entity of the system
-// 3. RequestAssignment     — Assignment and reassignment history
-// 4. RequestStatusHistory  — Full status change timeline per request
-// 5. RepairNote            — Technician repair documentation
-// 6. Notification          — Per-user notification records
-// 7. AuditLog              — System-wide activity trail
-// 8. SystemSettings        — Admin-configurable system settings
-// ================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -25,17 +6,167 @@ datasource db {
   provider = "postgresql"
 }
 
-// ----------------------------------------------------------------
-// ENUMS
-// ----------------------------------------------------------------
+model User {
+  id                  String                 @id @default(cuid())
+  email               String                 @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  idNumber            String                 @unique
+  department          String
+  role                UserRole
+  specialization      Specialization?
+  accountStatus       AccountStatus          @default(PENDING)
+  avatarUrl           String?
+  contactNumber       String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  auditLogs           AuditLog[]
+  assignedByRequests  MaintenanceRequest[]   @relation("AssignedByRequests")
+  assignedRequests    MaintenanceRequest[]   @relation("AssignedToRequests")
+  reviewedRequests    MaintenanceRequest[]   @relation("ReviewedRequests")
+  submittedRequests   MaintenanceRequest[]   @relation("SubmittedRequests")
+  notifications       Notification[]
+  repairNotes         RepairNote[]
+  assignmentsMade     RequestAssignment[]    @relation("AssignedBy")
+  assignmentsReceived RequestAssignment[]    @relation("AssignedTo")
+  statusChanges       RequestStatusHistory[]
+  updatedSettings     SystemSettings[]
+}
+
+model MaintenanceRequest {
+  id                 String                 @id @default(cuid())
+  requestCode        String                 @unique
+  submittedById      String
+  issueType          IssueType
+  building           Building
+  roomNumber         String
+  locationNotes      String?
+  description        String
+  urgencyLevel       UrgencyLevel
+  status             RequestStatus          @default(PENDING)
+  priorityLevel      PriorityLevel          @default(NORMAL)
+  photoUrl           String?
+  adminNotes         String?
+  rejectionReason    String?
+  cancellationReason String?
+  reviewedById       String?
+  reviewedAt         DateTime?
+  assignedToId       String?
+  assignedById       String?
+  assignedAt         DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  assigner           User?                  @relation("AssignedByRequests", fields: [assignedById], references: [id])
+  assignee           User?                  @relation("AssignedToRequests", fields: [assignedToId], references: [id])
+  reviewer           User?                  @relation("ReviewedRequests", fields: [reviewedById], references: [id])
+  submitter          User                   @relation("SubmittedRequests", fields: [submittedById], references: [id])
+  notifications      Notification[]
+  repairNote         RepairNote?
+  assignments        RequestAssignment[]
+  statusHistory      RequestStatusHistory[]
+
+  @@index([status])
+  @@index([submittedById])
+  @@index([assignedToId])
+  @@index([urgencyLevel])
+  @@index([createdAt])
+}
+
+model RequestAssignment {
+  id           String             @id @default(cuid())
+  requestId    String
+  assignedToId String
+  assignedById String
+  notes        String?
+  isActive     Boolean            @default(true)
+  assignedAt   DateTime           @default(now())
+  revokedAt    DateTime?
+  assigner     User               @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignee     User               @relation("AssignedTo", fields: [assignedToId], references: [id])
+  request      MaintenanceRequest @relation(fields: [requestId], references: [id])
+}
+
+model RequestStatusHistory {
+  id             String             @id @default(cuid())
+  requestId      String
+  changedById    String
+  previousStatus RequestStatus?
+  newStatus      RequestStatus
+  remarks        String?
+  changedAt      DateTime           @default(now())
+  actor          User               @relation(fields: [changedById], references: [id])
+  request        MaintenanceRequest @relation(fields: [requestId], references: [id])
+
+  @@index([requestId])
+  @@index([changedAt])
+}
+
+model RepairNote {
+  id            String             @id @default(cuid())
+  requestId     String             @unique
+  technicianId  String
+  notes         String
+  partsReplaced String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  request       MaintenanceRequest @relation(fields: [requestId], references: [id])
+  technician    User               @relation(fields: [technicianId], references: [id])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      NotifType
+  title     String
+  message   String
+  isRead    Boolean             @default(false)
+  requestId String?
+  createdAt DateTime            @default(now())
+  request   MaintenanceRequest? @relation(fields: [requestId], references: [id])
+  user      User                @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id                 String      @id @default(cuid())
+  userId             String?
+  action             AuditAction
+  affectedRecordId   String?
+  affectedRecordType String?
+  ipAddress          String?
+  userAgent          String?
+  details            String?
+  createdAt          DateTime    @default(now())
+  user               User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  updater     User?    @relation(fields: [updatedById], references: [id])
+}
 
 enum UserRole {
-  USER
   STUDENT
   FACULTY
   STAFF
   TECHNICIAN
   ADMIN
+  USER
 }
 
 enum AccountStatus {
@@ -119,185 +250,4 @@ enum AuditAction {
   USER_UPDATED
   USER_DEACTIVATED
   PASSWORD_RESET
-}
-
-// ----------------------------------------------------------------
-// MODELS
-// ----------------------------------------------------------------
-
-model User {
-  id              String          @id @default(cuid())
-  email           String          @unique
-  passwordHash    String
-  firstName       String
-  lastName        String
-  idNumber        String          @unique
-  department      String
-  role            UserRole
-  specialization  Specialization?
-  accountStatus   AccountStatus   @default(PENDING)
-  avatarUrl       String?
-  contactNumber   String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  // Relations
-  submittedRequests     MaintenanceRequest[]   @relation("SubmittedRequests")
-  reviewedRequests      MaintenanceRequest[]   @relation("ReviewedRequests")
-  assignedRequests      MaintenanceRequest[]   @relation("AssignedToRequests")
-  assignedByRequests    MaintenanceRequest[]   @relation("AssignedByRequests")
-  
-  assignmentsReceived   RequestAssignment[]    @relation("AssignedTo")
-  assignmentsMade       RequestAssignment[]    @relation("AssignedBy")
-  
-  notifications         Notification[]
-  auditLogs             AuditLog[]
-  repairNotes           RepairNote[]
-  statusChanges         RequestStatusHistory[]
-  updatedSettings       SystemSettings[]
-}
-
-model MaintenanceRequest {
-  id                  String          @id @default(cuid())
-  requestCode         String          @unique
-  submittedById       String
-  issueType           IssueType
-  building            Building
-  roomNumber          String
-  locationNotes       String?
-  description         String          @db.Text
-  urgencyLevel        UrgencyLevel
-  status              RequestStatus   @default(PENDING)
-  priorityLevel       PriorityLevel   @default(NORMAL)
-  photoUrl            String?
-  adminNotes          String?         @db.Text
-  rejectionReason     String?         @db.Text
-  cancellationReason  String?         @db.Text
-  
-  reviewedById        String?
-  reviewedAt          DateTime?
-  
-  assignedToId        String?
-  assignedById        String?
-  assignedAt          DateTime?
-  
-  startedAt           DateTime?
-  completedAt         DateTime?
-  
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-
-  // Relations
-  submitter           User            @relation("SubmittedRequests", fields: [submittedById], references: [id])
-  reviewer            User?           @relation("ReviewedRequests", fields: [reviewedById], references: [id])
-  assignee            User?           @relation("AssignedToRequests", fields: [assignedToId], references: [id])
-  assigner            User?           @relation("AssignedByRequests", fields: [assignedById], references: [id])
-  
-  assignments         RequestAssignment[]
-  statusHistory       RequestStatusHistory[]
-  repairNote          RepairNote?
-  notifications       Notification[]
-
-  @@index([status])
-  @@index([submittedById])
-  @@index([assignedToId])
-  @@index([urgencyLevel])
-  @@index([createdAt])
-}
-
-model RequestAssignment {
-  id              String             @id @default(cuid())
-  requestId       String
-  assignedToId    String
-  assignedById    String
-  notes           String?            @db.Text
-  isActive        Boolean            @default(true)
-  assignedAt      DateTime           @default(now())
-  revokedAt       DateTime?
-
-  // Relations
-  request         MaintenanceRequest @relation(fields: [requestId], references: [id])
-  assignee        User               @relation("AssignedTo", fields: [assignedToId], references: [id])
-  assigner        User               @relation("AssignedBy", fields: [assignedById], references: [id])
-}
-
-model RequestStatusHistory {
-  id              String             @id @default(cuid())
-  requestId       String
-  changedById     String
-  previousStatus  RequestStatus?
-  newStatus       RequestStatus
-  remarks         String?            @db.Text
-  changedAt       DateTime           @default(now())
-
-  // Relations
-  request         MaintenanceRequest @relation(fields: [requestId], references: [id])
-  actor           User               @relation(fields: [changedById], references: [id])
-
-  @@index([requestId])
-  @@index([changedAt])
-}
-
-model RepairNote {
-  id              String             @id @default(cuid())
-  requestId       String             @unique
-  technicianId    String
-  notes           String             @db.Text
-  partsReplaced   String?            @db.Text
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-
-  // Relations
-  request         MaintenanceRequest @relation(fields: [requestId], references: [id])
-  technician      User               @relation(fields: [technicianId], references: [id])
-}
-
-model Notification {
-  id              String             @id @default(cuid())
-  userId          String
-  type            NotifType
-  title           String
-  message         String             @db.Text
-  isRead          Boolean            @default(false)
-  requestId       String?
-  createdAt       DateTime           @default(now())
-
-  // Relations
-  user            User               @relation(fields: [userId], references: [id])
-  request         MaintenanceRequest? @relation(fields: [requestId], references: [id])
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
-}
-
-model AuditLog {
-  id                  String       @id @default(cuid())
-  userId              String?
-  action              AuditAction
-  affectedRecordId    String?
-  affectedRecordType  String?
-  ipAddress           String?
-  userAgent           String?
-  details             String?      @db.Text
-  createdAt           DateTime     @default(now())
-
-  // Relations
-  user                User?        @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-}
-
-model SystemSettings {
-  id              String       @id @default(cuid())
-  key             String       @unique
-  value           String       @db.Text
-  description     String?      @db.Text
-  updatedById     String?
-  updatedAt       DateTime     @updatedAt
-
-  // Relations
-  updater         User?        @relation(fields: [updatedById], references: [id])
 }

@@ -46,8 +46,8 @@ export default function UsersTable({
         return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-secondary-fixed text-on-secondary-fixed">FACULTY</span>;
       case 'STAFF':
         return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-secondary-fixed text-on-secondary-fixed">STAFF</span>;
-      case 'STUDENT':
-        return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-tertiary-fixed text-on-tertiary-fixed">STUDENT</span>;
+      case 'USER':
+        return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-tertiary-fixed text-on-tertiary-fixed">USER</span>;
       default:
         return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-surface-variant text-on-surface-variant">{role}</span>;
     }

@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = await getToken({ 
     req: request,
     secret: process.env.NEXTAUTH_SECRET 
@@ -15,7 +15,8 @@ export async function proxy(request: NextRequest) {
   const isTechnicianRoute = pathname.startsWith('/technician')
   const isUserRoute = pathname.startsWith('/dashboard') || 
                       pathname.startsWith('/requests') || 
-                      pathname.startsWith('/profile')
+                      pathname.startsWith('/profile') ||
+                      pathname.startsWith('/notifications')
 
   // If the user is logged in and tries to access login/register, redirect them to their portal
   if (isAuthPage && token) {
@@ -43,6 +44,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isTechnicianRoute && token?.role !== 'TECHNICIAN' && token?.role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (isUserRoute && token?.role !== 'USER') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

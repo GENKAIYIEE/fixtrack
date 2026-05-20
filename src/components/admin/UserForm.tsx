@@ -283,7 +283,7 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
                 >
                   <option value="" disabled>Select a role...</option>
                   <option value="ADMIN">Administrator</option>
-                  <option value="STUDENT">Student</option>
+                  <option value="USER">User</option>
                   <option value="FACULTY">Faculty</option>
                   <option value="STAFF">Staff</option>
                   <option value="TECHNICIAN">Technician</option>

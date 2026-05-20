@@ -106,7 +106,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
         onConfirmed={() => { setShowRejectModal(false); fetchRequest(); }}
-        request={request ? {
+        request={request ? ({
           id: request.id,
           requestCode: request.requestCode,
           submitter: request.submitter || request.submittedBy || { firstName: 'Unknown', lastName: '' },
@@ -114,7 +114,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           urgencyLevel: request.urgencyLevel,
           building: request.building,
           roomNumber: request.roomNumber,
-        } : null}
+        } as any) : null}
       />
     </div>
   );
