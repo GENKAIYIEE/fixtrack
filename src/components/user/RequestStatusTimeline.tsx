@@ -7,11 +7,22 @@ type RequestStatusTimelineProps = {
 };
 
 export default function RequestStatusTimeline({ status }: RequestStatusTimelineProps) {
-  const steps = [
+  const steps: { label: string; value: Status }[] = [
     { label: 'Pending', value: 'PENDING' },
     { label: 'In Progress', value: 'ONGOING' },
     { label: 'Completed', value: 'COMPLETED' },
   ];
+
+  function isActive(stepValue: Status): boolean {
+    return stepValue === status;
+  }
+
+  function isCompleted(stepValue: Status): boolean {
+    const statusOrder: Status[] = ['PENDING', 'ONGOING', 'COMPLETED'];
+    const currentIndex = statusOrder.indexOf(status);
+    const stepIndex = statusOrder.indexOf(stepValue);
+    return stepIndex !== -1 && stepIndex < currentIndex;
+  }
 
   return (
     <div className="flex items-center space-x-3">
@@ -45,15 +56,4 @@ export default function RequestStatusTimeline({ status }: RequestStatusTimelineP
       ))}
     </div>
   );
-}
-
-function isActive(stepValue: Status): boolean {
-  return stepValue === status;
-}
-
-function isCompleted(stepValue: Status): boolean {
-  const statusOrder: Status[] = ['PENDING', 'ONGOING', 'COMPLETED'];
-  const currentIndex = statusOrder.indexOf(status);
-  const stepIndex = statusOrder.indexOf(stepValue);
-  return stepIndex !== -1 && stepIndex < currentIndex;
 }
