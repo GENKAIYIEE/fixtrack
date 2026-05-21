@@ -67,7 +67,7 @@ export default function AdminRequestsPage() {
       try {
         const params = new URLSearchParams();
         params.set('page', String(overridePage ?? page));
-        params.set('limit', '10');
+        params.set('limit', '2');
         if (search) params.set('search', search);
         if (statusFilter) params.set('status', statusFilter);
         if (urgencyFilter) params.set('urgency', urgencyFilter);
@@ -248,7 +248,7 @@ export default function AdminRequestsPage() {
           page={page}
           totalPages={totalPages}
           total={total}
-          limit={10}
+          limit={2}
           onPageChange={handlePageChange}
         />
       )}
