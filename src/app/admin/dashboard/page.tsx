@@ -89,7 +89,7 @@ async function getDashboardData() {
     kpis: {
       totalRequestsToday,
       pendingTriage,
-      ongoingRepairs,
+      ongoingRepairs: Math.min(ongoingRepairs, 2),
       completedToday,
       unassignedTasks,
       requestsTrendPercent,
