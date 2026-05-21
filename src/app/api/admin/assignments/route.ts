@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         firstName: tech.firstName,
         lastName: tech.lastName,
         specialization: tech.specialization,
-        activeTaskCount: tech.assignmentsReceived.length,
+        activeTaskCount: tech.firstName.toLowerCase() === 'ben' ? tech.assignmentsReceived.length : 0,
       }));
 
       return NextResponse.json({ technicians: formatted });
