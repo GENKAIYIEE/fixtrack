@@ -5,11 +5,30 @@ import Image from 'next/image';
 
 interface RequestInfoCardProps {
   request: any;
+  onRefresh?: () => void;
+  onReject?: () => void;
 }
 
-export default function RequestInfoCard({ request }: RequestInfoCardProps) {
+export default function RequestInfoCard({ request, onRefresh, onReject }: RequestInfoCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleApprove = async () => {
+    setIsUpdating(true);
+    try {
+      await fetch(`/api/admin/requests/${request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Failed to approve request', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
@@ -111,6 +130,28 @@ export default function RequestInfoCard({ request }: RequestInfoCardProps) {
             </div>
           )}
         </div>
+
+        {/* Approval Actions */}
+        {request.status === 'PENDING' && (
+          <div className="p-6 bg-surface-container-low border-t border-outline-variant flex gap-4">
+            <button
+              onClick={handleApprove}
+              disabled={isUpdating}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#10B981] text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <span className="material-symbols-outlined">check_circle</span>
+              Approve Request
+            </button>
+            <button
+              onClick={onReject}
+              disabled={isUpdating}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-error text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <span className="material-symbols-outlined">cancel</span>
+              Reject Request
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Lightbox Overlay */}

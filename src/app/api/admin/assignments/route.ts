@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (type === 'unassigned') {
       const requests = await prisma.maintenanceRequest.findMany({
         where: {
-          status: 'PENDING',
+          status: 'APPROVED' as any,
           assignedToId: null,
         },
         include: {

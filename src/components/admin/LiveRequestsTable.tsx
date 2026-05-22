@@ -4,15 +4,13 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import type { MaintenanceRequest } from '@prisma/client';
 
-// FIXED: BUG-08 — Added onApprove, onAssign, onReject props to replace alert() placeholders
+// FIXED: BUG-08 — Added onView prop to replace inline actions
 type LiveRequestsTableProps = {
   requests: Partial<MaintenanceRequest>[];
-  onApprove?: (id: string) => void;
-  onAssign?: (id: string) => void;
-  onReject?: (id: string) => void;
+  onView?: (id: string) => void;
 };
 
-export default function LiveRequestsTable({ requests, onApprove, onAssign, onReject }: LiveRequestsTableProps) {
+export default function LiveRequestsTable({ requests, onView }: LiveRequestsTableProps) {
   // FIXED: BUG-09 — useRouter for View All navigation
   const router = useRouter();
 
@@ -87,29 +85,12 @@ export default function LiveRequestsTable({ requests, onApprove, onAssign, onRej
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* FIXED: BUG-08 — Approve calls onApprove prop (navigates to request detail) */}
                       <button
-                        onClick={() => req.id && onApprove?.(req.id)}
+                        onClick={() => req.id && onView?.(req.id)}
                         className="bg-emerald-500 text-white p-1.5 rounded-md hover:bg-emerald-600 shadow-sm"
-                        title="View & Approve"
+                        title="View Request Details"
                       >
-                        <span className="material-symbols-outlined text-[18px]">check</span>
-                      </button>
-                      {/* FIXED: BUG-08 — Assign calls onAssign prop (navigates to assignments page) */}
-                      <button
-                        onClick={() => req.id && onAssign?.(req.id)}
-                        className="bg-[#2563EB] text-white p-1.5 rounded-md hover:bg-blue-700 shadow-sm"
-                        title="Assign Technician"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">person_add</span>
-                      </button>
-                      {/* FIXED: BUG-08 — Reject calls onReject prop (opens modal) */}
-                      <button
-                        onClick={() => req.id && onReject?.(req.id)}
-                        className="bg-red-500 text-white p-1.5 rounded-md hover:bg-red-600 shadow-sm"
-                        title="Reject Request"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">close</span>
+                        <span className="material-symbols-outlined text-[18px]">visibility</span>
                       </button>
                     </div>
                   </td>

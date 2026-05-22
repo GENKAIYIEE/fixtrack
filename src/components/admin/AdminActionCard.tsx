@@ -304,22 +304,6 @@ export default function AdminActionCard({ request, onRefresh, onReject }: AdminA
         {request.status === 'PENDING' && (
           <div className="space-y-3">
             <button
-              onClick={handleApprove}
-              disabled={isUpdating}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-[#10B981] text-white font-bold rounded-full hover:opacity-90 transition-opacity"
-            >
-              <span className="material-symbols-outlined">check_circle</span>
-              Approve Action Plan
-            </button>
-            <button
-              onClick={() => onReject ? onReject() : openModal('reject')}
-              disabled={isUpdating}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-error text-white font-bold rounded-full hover:opacity-90 transition-opacity"
-            >
-              <span className="material-symbols-outlined">cancel</span>
-              Reject Request
-            </button>
-            <button
               onClick={() => openModal('cancel')}
               disabled={isUpdating}
               className="w-full flex items-center justify-center gap-2 py-3 bg-surface-container text-on-surface font-bold rounded-full hover:opacity-90 transition-opacity"
