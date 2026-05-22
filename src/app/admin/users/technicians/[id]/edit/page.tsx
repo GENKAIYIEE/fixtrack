@@ -142,11 +142,12 @@ export default function EditTechnicianPage() {
   );
 }
 
+const SkeletonBar = ({ w = 'w-full', h = 'h-4' }: { w?: string; h?: string }) => (
+  <div className={`${w} ${h} rounded-md bg-slate-200 animate-pulse`} />
+);
+
 /** Loading skeleton while technician data is being fetched */
 function EditTechnicianSkeleton() {
-  const SkeletonBar = ({ w = 'w-full', h = 'h-4' }: { w?: string; h?: string }) => (
-    <div className={`${w} ${h} rounded-md bg-slate-200 animate-pulse`} />
-  );
 
   return (
     <div className="px-8 py-6 flex flex-col gap-6">

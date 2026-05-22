@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       { message: 'Registration successful. Your account is now active — you can log in immediately.' },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
     return NextResponse.json(
       { message: 'An unexpected error occurred. Please try again.' },

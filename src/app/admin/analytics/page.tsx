@@ -34,10 +34,6 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => {
-    fetchAnalytics(timeRange);
-  }, [timeRange]);
-
   const fetchAnalytics = async (range: string) => {
     setIsLoading(true);
     try {
@@ -52,6 +48,10 @@ export default function AnalyticsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAnalytics(timeRange);
+  }, [timeRange]);
 
   const handleExportPDF = () => {
     window.print();

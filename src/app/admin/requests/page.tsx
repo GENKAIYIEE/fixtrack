@@ -62,20 +62,23 @@ export default function AdminRequestsPage() {
   // FIXED: BUG-02 & BUG-03 — fetchRequests accepts an explicit pageOverride so it
   // can be called with a known page number without waiting for React state to flush.
   const fetchRequests = useCallback(
-    async (overridePage?: number) => {
+    async (overridePage?: number, reset?: boolean) => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams();
         params.set('page', String(overridePage ?? page));
         params.set('limit', '2');
-        if (search) params.set('search', search);
-        if (statusFilter) params.set('status', statusFilter);
-        if (urgencyFilter) params.set('urgency', urgencyFilter);
-        if (buildingFilter) params.set('building', buildingFilter);
-        if (assignedToFilter) params.set('assignedTo', assignedToFilter);
-        if (issueTypeFilter) params.set('issueType', issueTypeFilter);
-        if (dateFrom) params.set('dateFrom', dateFrom);
-        if (dateTo) params.set('dateTo', dateTo);
+        
+        if (!reset) {
+          if (search) params.set('search', search);
+          if (statusFilter) params.set('status', statusFilter);
+          if (urgencyFilter) params.set('urgency', urgencyFilter);
+          if (buildingFilter) params.set('building', buildingFilter);
+          if (assignedToFilter) params.set('assignedTo', assignedToFilter);
+          if (issueTypeFilter) params.set('issueType', issueTypeFilter);
+          if (dateFrom) params.set('dateFrom', dateFrom);
+          if (dateTo) params.set('dateTo', dateTo);
+        }
 
         const res = await fetch(`/api/admin/requests?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to fetch');
@@ -94,16 +97,7 @@ export default function AdminRequestsPage() {
     [page, search, statusFilter, urgencyFilter, buildingFilter, assignedToFilter, issueTypeFilter, dateFrom, dateTo]
   );
 
-  // FIXED: BUG-07 — Trigger token for reset; toggling this causes a re-fetch with
-  // cleared filters after React has flushed all state updates.
-  const [shouldFetch, setShouldFetch] = useState(false);
 
-  // FIXED: BUG-02 — Listen to shouldFetch toggle instead of calling fetchRequests
-  // inside setTimeout (which captured stale closure values).
-  useEffect(() => {
-    fetchRequests(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldFetch]);
 
   // FIXED: BUG-03 — Removed the broad [page] useEffect that caused double-fetches
   // when filter handlers also called fetchRequests(1). Page changes are now handled
@@ -116,8 +110,6 @@ export default function AdminRequestsPage() {
     setPage(1);
   };
 
-  // FIXED: BUG-02 — Reset now toggles shouldFetch instead of using setTimeout to
-  // avoid stale closure capturing old filter values.
   const handleReset = () => {
     setSearch('');
     setStatusFilter('');
@@ -129,8 +121,7 @@ export default function AdminRequestsPage() {
     setDateTo('');
     setSelectedIds([]);
     setPage(1);
-    // Flip the token — the useEffect above will call fetchRequests(1) after flush
-    setShouldFetch(prev => !prev);
+    fetchRequests(1, true);
   };
 
   // FIXED: BUG-03 — Page changes call fetchRequests directly with the new page
