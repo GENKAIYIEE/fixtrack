@@ -143,11 +143,12 @@ export default function EditUserPage() {
   );
 }
 
+const SkeletonBar = ({ w = 'w-full', h = 'h-4' }: { w?: string; h?: string }) => (
+  <div className={`${w} ${h} rounded-md bg-slate-200 animate-pulse`} />
+);
+
 /** Loading skeleton while user data is being fetched */
 function EditUserSkeleton() {
-  const SkeletonBar = ({ w = 'w-full', h = 'h-4' }: { w?: string; h?: string }) => (
-    <div className={`${w} ${h} rounded-md bg-slate-200 animate-pulse`} />
-  );
 
   return (
     <div className="px-8 py-6 flex flex-col gap-6">

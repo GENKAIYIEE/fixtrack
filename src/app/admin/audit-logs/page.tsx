@@ -25,11 +25,16 @@ export default function AuditLogsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  const [prevSearch, setPrevSearch] = useState('');
+  if (search !== prevSearch) {
+    setPrevSearch(search);
+    setPage(1);
+  }
+
   // Handle Search Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // FIXED: BUG-07 — Reset to page 1 on search (primitive, no object reference churn)
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);

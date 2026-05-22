@@ -7,27 +7,22 @@ import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import AdminActionCard from '@/components/admin/AdminActionCard';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
-import { RequestStatus, IssueType, UrgencyLevel, Building } from '@prisma/client';
+import { RequestStatus, IssueType, UrgencyLevel, Building, Prisma } from '@prisma/client';
 
-// FIXED: QUALITY-03 — Replaced any type for request state with proper interface
-interface RequestDetail {
-  id: string;
-  requestCode: string;
-  status: RequestStatus;
-  urgencyLevel: UrgencyLevel;
-  priorityLevel: string;
-  issueType: IssueType;
-  building: Building;
-  roomNumber: string;
-  description: string;
-  adminNotes?: string;
-  repairNote?: string;
-  submittedBy: { firstName: string; lastName: string; department?: string };
-  assignedTo?: { firstName: string; lastName: string; specialization?: string; activeTaskCount?: number };
-  statusHistory: any[]; // Using any[] here just to keep the interface concise, or could define StatusHistoryEntry
-  createdAt: string;
+type RequestDetail = Prisma.MaintenanceRequestGetPayload<{
+  include: {
+    submittedBy: {
+      select: { firstName: true; lastName: true; department: true; }
+    };
+    assignedTo: {
+      select: { firstName: true; lastName: true; specialization: true; activeTaskCount: true; }
+    };
+    statusHistory: true;
+    repairNote: true;
+  }
+}> & { 
   submitter?: { firstName: string; lastName: string; };
-}
+};
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

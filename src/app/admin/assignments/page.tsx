@@ -28,8 +28,14 @@ function AssignmentsContent() {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(requestIdParam);
+  const [prevRequestIdParam, setPrevRequestIdParam] = useState<string | null>(requestIdParam);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string | null>(null);
+
+  if (requestIdParam !== prevRequestIdParam) {
+    setPrevRequestIdParam(requestIdParam);
+    setSelectedRequestId(requestIdParam);
+  }
   const [isAssigning, setIsAssigning] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -67,16 +73,7 @@ function AssignmentsContent() {
     initFetch();
   }, []);
 
-  // Pre-select request if provided in URL parameter and found in list
-  useEffect(() => {
-    if (requestIdParam && requests.length > 0) {
-      const found = requests.find((r) => r.id === requestIdParam);
-      if (found) {
-        setSelectedRequestId(found.id);
-        // We could also try to scroll it into view, but basic pre-selection is fine for now
-      }
-    }
-  }, [requestIdParam, requests]);
+
 
   const handleSelectRequest = (id: string) => {
     setSelectedRequestId(id);
