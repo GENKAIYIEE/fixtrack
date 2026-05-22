@@ -87,7 +87,11 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             status={request.status} 
             hasRepairNote={!!request.repairNote} 
           />
-          <RequestInfoCard request={request} />
+          <RequestInfoCard 
+            request={request} 
+            onRefresh={fetchRequest}
+            onReject={() => setShowRejectModal(true)} 
+          />
           <ActivityLog statusHistory={request.statusHistory || []} />
         </div>
 

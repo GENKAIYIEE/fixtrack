@@ -177,6 +177,7 @@ enum AccountStatus {
 
 enum RequestStatus {
   PENDING
+  APPROVED
   ONGOING
   COMPLETED
   REJECTED

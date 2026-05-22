@@ -85,15 +85,16 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       const { priorityLevel, adminNotes, assignedToId } = body;
       
       const isPending = previousStatus === 'PENDING';
-      const newStatus = isPending ? 'ONGOING' : previousStatus;
+      const newStatus = isPending ? ('APPROVED' as any) : previousStatus;
 
       // Update request
       const updatedReq = await prisma.maintenanceRequest.update({
         where: { id },
         data: {
           status: newStatus,
-          priorityLevel: priorityLevel as PriorityLevel,
-          adminNotes,
+          // Only update priority and notes if provided, otherwise keep existing
+          ...(priorityLevel && { priorityLevel: priorityLevel as PriorityLevel }),
+          ...(adminNotes !== undefined && { adminNotes }),
           assignedToId: assignedToId || currentRequest.assignedToId,
           ...(assignedToId && assignedToId !== currentRequest.assignedToId && {
             assignedById: auth.userId,
@@ -111,7 +112,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             changedById: auth.userId,
             previousStatus,
             newStatus,
-            remarks: 'Request Approved and set to Ongoing',
+            remarks: 'Request Approved',
           }
         });
       }
@@ -152,7 +153,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           action: 'REQUEST_APPROVED',
           affectedRecordId: id,
           affectedRecordType: 'MaintenanceRequest',
-          details: `Approved action plan. Priority: ${priorityLevel}`,
+          details: `Approved action plan.`,
         }
       });
 
