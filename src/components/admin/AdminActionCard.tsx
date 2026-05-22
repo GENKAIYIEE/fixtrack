@@ -14,13 +14,13 @@ interface RequestDetail {
   building: string;
   roomNumber: string;
   description: string;
-  adminNotes?: string;
-  assignedToId?: string;
+  adminNotes?: string | null;
+  assignedToId?: string | null;
   assignee?: {
     firstName: string;
     lastName: string;
-    specialization?: string;
-    avatarUrl?: string;
+    specialization?: string | null;
+    avatarUrl?: string | null;
   } | null;
 }
 
