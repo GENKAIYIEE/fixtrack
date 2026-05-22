@@ -19,7 +19,10 @@ type RequestDetail = Prisma.MaintenanceRequestGetPayload<{
     };
     statusHistory: true;
   }
-}> & { submitter?: { firstName: string; lastName: string; } };
+}> & { 
+  submitter?: { firstName: string; lastName: string; };
+  repairNote?: string; 
+};
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
