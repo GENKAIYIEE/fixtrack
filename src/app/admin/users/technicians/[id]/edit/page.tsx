@@ -46,7 +46,6 @@ export default function EditTechnicianPage() {
           lastName: user.lastName ?? '',
           email: user.email ?? '',
           idNumber: user.idNumber ?? '',
-          department: user.department ?? '',
           contactNumber: user.contactNumber ?? '',
           specialization: user.specialization ?? '',
           password: '',

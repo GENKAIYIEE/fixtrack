@@ -45,7 +45,7 @@ async function getDashboardData() {
     }),
     prisma.maintenanceRequest.findMany({ take: 2, orderBy: { createdAt: 'desc' } }),
     prisma.maintenanceRequest.findMany({
-      where: { urgencyLevel: 'URGENT', assignedToId: null, status: { notIn: ['COMPLETED', 'REJECTED', 'CANCELLED'] } },
+      where: { priorityLevel: 'URGENT', assignedToId: null, status: { notIn: ['COMPLETED', 'REJECTED', 'CANCELLED'] } },
       take: 3,
       orderBy: { createdAt: 'desc' },
     }),

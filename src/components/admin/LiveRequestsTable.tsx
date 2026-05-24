@@ -40,9 +40,9 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
   };
 
   const getDisplayLabel = (req: Partial<MaintenanceRequest>) => {
-    if (req.urgencyLevel === 'URGENT') return 'Urgent';
+    if (req.priorityLevel === 'URGENT') return 'Urgent';
     if (req.status === 'PENDING') return 'Pending';
-    return req.urgencyLevel === 'NORMAL' ? 'Normal' : req.status || 'Unknown';
+    return req.priorityLevel === 'NORMAL' ? 'Normal' : req.status || 'Unknown';
   };
 
   return (

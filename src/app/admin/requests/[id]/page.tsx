@@ -4,25 +4,44 @@ import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import RequestInfoCard from '@/components/admin/RequestInfoCard';
 import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
-import AdminActionCard from '@/components/admin/AdminActionCard';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
-import { RequestStatus, IssueType, UrgencyLevel, Building, Prisma } from '@prisma/client';
+import { RequestStatus } from '@prisma/client';
 
-type RequestDetail = Prisma.MaintenanceRequestGetPayload<{
-  include: {
-    submittedBy: {
-      select: { firstName: true; lastName: true; department: true; }
-    };
-    assignedTo: {
-      select: { firstName: true; lastName: true; specialization: true; activeTaskCount: true; }
-    };
-    statusHistory: true;
-    repairNote: true;
-  }
-}> & { 
-  submitter?: { firstName: string; lastName: string; };
-};
+// Typed to match what /api/admin/requests/[id] actually returns
+interface RequestDetail {
+  id: string;
+  requestCode: string;
+  status: string;
+  urgencyLevel: string;
+  priorityLevel: string;
+  issueType: string;
+  building: string;
+  roomNumber: string;
+  locationNotes?: string | null;
+  description: string;
+  adminNotes?: string | null;
+  photoUrl?: string | null;
+  rejectionReason?: string | null;
+  cancellationReason?: string | null;
+  assignedToId?: string | null;
+  submittedById: string;
+  // Relations (returned by the GET include)
+  submitter?: {
+    firstName: string;
+    lastName: string;
+    department?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  assignee?: {
+    firstName: string;
+    lastName: string;
+    specialization?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  repairNote?: unknown | null;
+  statusHistory: unknown[];
+}
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -57,11 +76,25 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
     return <div className="p-8 text-center text-error font-medium">Request not found.</div>;
   }
 
+  // Shape passed to RejectRequestModal — strictly typed, no `as any`
+  const modalRequest = {
+    id: request.id,
+    requestCode: request.requestCode,
+    submitter: {
+      firstName: request.submitter?.firstName ?? 'Unknown',
+      lastName:  request.submitter?.lastName  ?? '',
+    },
+    issueType:    request.issueType    as any,
+    urgencyLevel: request.urgencyLevel as any,
+    building:     request.building     as any,
+    roomNumber:   request.roomNumber,
+  };
+
   return (
     <div className="w-full">
       {/* ── Page Header ── */}
       <div className="mb-6">
-        <Link 
+        <Link
           href="/admin/requests"
           className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors"
         >
@@ -75,45 +108,35 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           Triage Request: REQ-{request.requestCode}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Review details, update priority, and assign to a technician.
+          Review details, set priority, then approve or reject the request.
         </p>
       </div>
 
       {/* ── Main Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column (Details & Log) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <RequestStatusStepper 
-            status={request.status} 
-            hasRepairNote={!!request.repairNote} 
-          />
-          <RequestInfoCard 
-            request={request} 
-            onRefresh={fetchRequest}
-            onReject={() => setShowRejectModal(true)} 
-          />
-          <ActivityLog statusHistory={request.statusHistory || []} />
-        </div>
-
-        {/* Right Column (Actions) */}
-        <div className="lg:col-span-1">
-          <AdminActionCard request={request} onRefresh={fetchRequest} onReject={() => setShowRejectModal(true)} />
-        </div>
+      <div className="w-full flex flex-col gap-6">
+        <RequestStatusStepper
+          status={request.status as RequestStatus}
+          hasRepairNote={!!request.repairNote}
+        />
+        {/* RequestInfoCard owns Approve + Reject for PENDING status.
+            onReject opens the RejectRequestModal via parent state. */}
+        <RequestInfoCard
+          request={request}
+          onRefresh={fetchRequest}
+          onReject={() => setShowRejectModal(true)}
+        />
+        <ActivityLog statusHistory={request.statusHistory ?? []} />
       </div>
 
+      {/* Rejection modal — rendered at page level so it sits above everything */}
       <RejectRequestModal
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
-        onConfirmed={() => { setShowRejectModal(false); fetchRequest(); }}
-        request={request ? ({
-          id: request.id,
-          requestCode: request.requestCode,
-          submitter: request.submitter || request.submittedBy || { firstName: 'Unknown', lastName: '' },
-          issueType: request.issueType,
-          urgencyLevel: request.urgencyLevel,
-          building: request.building,
-          roomNumber: request.roomNumber,
-        } as any) : null}
+        onConfirmed={() => {
+          setShowRejectModal(false);
+          fetchRequest();
+        }}
+        request={modalRequest}
       />
     </div>
   );

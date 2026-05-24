@@ -121,7 +121,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="font-h1 text-h1 text-on-surface">User Management</h1>
         <Link
