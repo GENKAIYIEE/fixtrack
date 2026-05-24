@@ -67,7 +67,7 @@ export default function UsersTable({
   };
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full">
       <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-primary-container text-on-primary font-table-header text-table-header">
@@ -126,7 +126,7 @@ export default function UsersTable({
                           {getInitials(user.firstName, user.lastName)}
                         </div>
                       )}
-                      <span className="font-label-md text-label-md text-on-surface group-hover:text-on-secondary-fixed whitespace-nowrap">
+                      <span className="font-label-md text-label-md text-on-surface group-hover:text-on-secondary-fixed">
                         {user.firstName} {user.lastName}
                       </span>
                     </div>
@@ -137,7 +137,7 @@ export default function UsersTable({
                   <td className="px-6 py-4">
                     <div className="flex flex-col items-start gap-1">
                       {renderRoleBadge(user.role)}
-                      <span className="text-xs text-outline group-hover:text-secondary whitespace-nowrap">
+                      <span className="text-xs text-outline group-hover:text-secondary">
                         {user.department}
                       </span>
                     </div>
@@ -148,7 +148,7 @@ export default function UsersTable({
                   <td className="px-6 py-4">
                     {renderStatusPill(user.accountStatus)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-on-surface-variant group-hover:text-on-secondary-fixed whitespace-nowrap">
+                  <td className="px-6 py-4 text-sm text-on-surface-variant group-hover:text-on-secondary-fixed">
                     {format(new Date(user.createdAt), 'MMM dd, yyyy')}
                   </td>
                   <td className="px-6 py-4 text-right">

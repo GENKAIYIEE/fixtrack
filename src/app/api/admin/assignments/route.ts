@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Sort by urgency level manually to ensure correct order
-      const urgencyMap: Record<string, number> = {
+      // Sort by priority level manually to ensure correct order
+      const priorityMap: Record<string, number> = {
         URGENT: 4,
         HIGH: 3,
         NORMAL: 2,
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
       };
 
       requests.sort((a, b) => {
-        const uA = urgencyMap[a.urgencyLevel] || 0;
-        const uB = urgencyMap[b.urgencyLevel] || 0;
-        if (uA !== uB) return uB - uA;
+        const pA = priorityMap[a.priorityLevel] || priorityMap[a.urgencyLevel] || 0;
+        const pB = priorityMap[b.priorityLevel] || priorityMap[b.urgencyLevel] || 0;
+        if (pA !== pB) return pB - pA;
         return a.createdAt.getTime() - b.createdAt.getTime();
       });
 

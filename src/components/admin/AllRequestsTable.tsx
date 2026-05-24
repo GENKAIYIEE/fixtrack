@@ -11,6 +11,7 @@ export type RequestRow = {
   building: string;
   roomNumber: string;
   urgencyLevel: string;
+  priorityLevel: string;
   status: string;
   description: string;
   createdAt: string;
@@ -29,6 +30,7 @@ type AllRequestsTableProps = {
   onView: (id: string) => void;
   onAssign: (id: string) => void;
   onReject: (id: string) => void;
+  onDelete: (id: string) => void;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -94,6 +96,38 @@ function UrgencyBadge({ level }: { level: string }) {
   }
 }
 
+function PriorityBadge({ level }: { level: string }) {
+  switch (level) {
+    case 'URGENT':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EF4444] text-white">
+          <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+          Urgent
+        </span>
+      );
+    case 'HIGH':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#F97316] text-white">
+          <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>priority_high</span>
+          High
+        </span>
+      );
+    case 'NORMAL':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#DBEAFE] text-[#1E3A8A]">
+          Normal
+        </span>
+      );
+    case 'LOW':
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e3e1e9] text-[#444651]">
+          Low
+        </span>
+      );
+  }
+}
+
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'PENDING':
@@ -135,7 +169,7 @@ function StatusBadge({ status }: { status: string }) {
 function SkeletonRow({ index }: { index: number }) {
   return (
     <tr className={index % 2 === 0 ? 'bg-[#F1F5F9]' : 'bg-white'}>
-      {Array.from({ length: 9 }).map((_, i) => (
+      {Array.from({ length: 10 }).map((_, i) => (
         <td key={i} className="px-4 py-4">
           <div className="h-4 bg-slate-200 rounded animate-pulse" />
         </td>
@@ -155,6 +189,7 @@ export default function AllRequestsTable({
   onView,
   onAssign,
   onReject,
+  onDelete,
 }: AllRequestsTableProps) {
   const allSelected = requests.length > 0 && requests.every((r) => selectedIds.includes(r.id));
   const someSelected = selectedIds.length > 0 && !allSelected;
@@ -181,6 +216,7 @@ export default function AllRequestsTable({
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Submitter</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Type &amp; Location</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Urgency</th>
+              <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Priority</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Status</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Assigned To</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Date Logged</th>
@@ -195,7 +231,7 @@ export default function AllRequestsTable({
               : requests.length === 0
               ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center">
+                  <td colSpan={10} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <span className="material-symbols-outlined text-[48px]">inbox</span>
                       <p className="text-sm font-medium">No requests found</p>
@@ -261,6 +297,11 @@ export default function AllRequestsTable({
                         <UrgencyBadge level={req.urgencyLevel} />
                       </td>
 
+                      {/* Priority */}
+                      <td className="px-4 py-3.5">
+                        <PriorityBadge level={req.priorityLevel || 'NORMAL'} />
+                      </td>
+
                       {/* Status */}
                       <td className="px-4 py-3.5">
                         <StatusBadge status={req.status} />
@@ -319,6 +360,16 @@ export default function AllRequestsTable({
                               <span className="material-symbols-outlined text-[18px]">cancel</span>
                             </button>
                           )}
+
+                          {/* Delete — always visible for admins */}
+                          <button
+                            onClick={() => onDelete(req.id)}
+                            title="Delete Request Permanently"
+                            className="p-1.5 rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6] transition-colors ml-1"
+                            aria-label={`Delete request ${req.requestCode}`}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>

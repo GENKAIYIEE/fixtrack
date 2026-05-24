@@ -8,7 +8,6 @@ export interface TechnicianFormData {
   lastName: string;
   email: string;
   idNumber: string;
-  department: string;
   contactNumber?: string;
   specialization: string;
   password: string;
@@ -27,7 +26,6 @@ const defaultForm: TechnicianFormData = {
   lastName: '',
   email: '',
   idNumber: '',
-  department: '',
   contactNumber: '',
   specialization: '',
   password: '',
@@ -81,7 +79,6 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
       newErrors.email = 'Enter a valid email address.';
     }
     if (!form.idNumber.trim()) newErrors.idNumber = 'Employee ID is required.';
-    if (!form.department.trim()) newErrors.department = 'Department is required.';
     if (!form.specialization) newErrors.specialization = 'Specialization is required.';
     
     let isValid = true;
@@ -221,23 +218,6 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
                 className={getInputClass('idNumber')}
               />
               {errors.idNumber && <p className={errorClass}>{errors.idNumber}</p>}
-            </div>
-
-            {/* Department */}
-            <div>
-              <label htmlFor="department" className={labelClass}>
-                Department <span className="text-error">*</span>
-              </label>
-              <input
-                id="department"
-                name="department"
-                type="text"
-                value={form.department}
-                onChange={handleChange}
-                placeholder="e.g. Facilities & Maintenance"
-                className={getInputClass('department')}
-              />
-              {errors.department && <p className={errorClass}>{errors.department}</p>}
             </div>
 
             {/* Contact Number */}

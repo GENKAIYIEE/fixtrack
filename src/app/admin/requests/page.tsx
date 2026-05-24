@@ -103,6 +103,12 @@ export default function AdminRequestsPage() {
   // when filter handlers also called fetchRequests(1). Page changes are now handled
   // exclusively via handlePageChange below.
 
+  // ── Initial load ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchRequests(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Filter handlers ──────────────────────────────────────────────────────────
   const handleApply = () => {
     setSelectedIds([]);
@@ -157,6 +163,23 @@ export default function AdminRequestsPage() {
   const handleReject = (id: string) => {
     setRejectingRequestId(id);
     setRejectModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this request? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/requests/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchRequests(page);
+      } else {
+        alert('Failed to delete request');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting the request');
+    }
   };
 
   // ── Derive the request object needed by RejectRequestModal ───────────────────
@@ -231,6 +254,7 @@ export default function AdminRequestsPage() {
         onView={handleView}
         onAssign={handleAssign}
         onReject={handleReject}
+        onDelete={handleDelete}
       />
 
       {/* ── Pagination ── */}

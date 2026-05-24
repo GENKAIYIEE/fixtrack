@@ -27,10 +27,12 @@ export default function UsersFilterBar({
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      onSearchChange(localSearch);
+      if (localSearch !== search) {
+        onSearchChange(localSearch);
+      }
     }, 300);
     return () => clearTimeout(handler);
-  }, [localSearch, onSearchChange]);
+  }, [localSearch, search, onSearchChange]);
 
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant p-4 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -59,8 +61,6 @@ export default function UsersFilterBar({
             <option value="">All Roles</option>
             <option value="ADMIN">ADMIN</option>
             <option value="USER">USER</option>
-            <option value="FACULTY">FACULTY</option>
-            <option value="STAFF">STAFF</option>
             <option value="TECHNICIAN">TECHNICIAN</option>
           </select>
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">

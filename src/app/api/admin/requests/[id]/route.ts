@@ -82,29 +82,23 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     const previousStatus = currentRequest.status;
 
     if (action === 'approve') {
-      const { priorityLevel, adminNotes, assignedToId } = body;
-      
+      const { priorityLevel, adminNotes } = body;
+
       const isPending = previousStatus === 'PENDING';
       const newStatus = isPending ? ('APPROVED' as any) : previousStatus;
 
-      // Update request
+      // Update request — triage fields only; assignment is handled separately
       const updatedReq = await prisma.maintenanceRequest.update({
         where: { id },
         data: {
           status: newStatus,
-          // Only update priority and notes if provided, otherwise keep existing
           ...(priorityLevel && { priorityLevel: priorityLevel as PriorityLevel }),
           ...(adminNotes !== undefined && { adminNotes }),
-          assignedToId: assignedToId || currentRequest.assignedToId,
-          ...(assignedToId && assignedToId !== currentRequest.assignedToId && {
-            assignedById: auth.userId,
-            assignedAt: now,
-          }),
           ...(isPending && { reviewedById: auth.userId, reviewedAt: now }),
         },
       });
 
-      // Create history
+      // Status history
       if (isPending) {
         await prisma.requestStatusHistory.create({
           data: {
@@ -113,48 +107,19 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             previousStatus,
             newStatus,
             remarks: 'Request Approved',
-          }
+          },
         });
       }
 
-      // Create assignment if changed
-      if (assignedToId && assignedToId !== currentRequest.assignedToId) {
-        // Deactivate old assignment
-        await prisma.requestAssignment.updateMany({
-          where: { requestId: id, isActive: true },
-          data: { isActive: false, revokedAt: now },
-        });
-
-        await prisma.requestAssignment.create({
-          data: {
-            requestId: id,
-            assignedToId,
-            assignedById: auth.userId,
-            isActive: true,
-          }
-        });
-        
-        // Notify tech
-        await prisma.notification.create({
-          data: {
-            userId: assignedToId,
-            type: 'TASK_ASSIGNED',
-            title: 'Task Assigned',
-            message: `You have been assigned to request REQ-${currentRequest.requestCode}`,
-            requestId: id
-          }
-        });
-      }
-
-      // Create AuditLog
+      // Audit log
       await prisma.auditLog.create({
         data: {
           userId: auth.userId,
           action: 'REQUEST_APPROVED',
           affectedRecordId: id,
           affectedRecordType: 'MaintenanceRequest',
-          details: `Approved action plan.`,
-        }
+          details: `Request approved. Priority: ${priorityLevel || currentRequest.priorityLevel}`,
+        },
       });
 
       // Notify submitter
@@ -164,9 +129,9 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             userId: currentRequest.submittedById,
             type: 'REQUEST_APPROVED',
             title: 'Request Approved',
-            message: `Your request REQ-${currentRequest.requestCode} has been approved.`,
-            requestId: id
-          }
+            message: `Your request REQ-${currentRequest.requestCode} has been approved and will be dispatched to a technician shortly.`,
+            requestId: id,
+          },
         });
       }
 
@@ -376,5 +341,42 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   } catch (error) {
     console.error(`[PATCH /api/admin/requests/${id}]`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await verifyAdmin();
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const { id } = await context.params;
+
+  try {
+    const existing = await prisma.maintenanceRequest.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+    }
+
+    // Delete related records manually to avoid foreign key constraints since there is no Cascade
+    await prisma.$transaction([
+      prisma.requestAssignment.deleteMany({ where: { requestId: id } }),
+      prisma.requestStatusHistory.deleteMany({ where: { requestId: id } }),
+      prisma.repairNote.deleteMany({ where: { requestId: id } }),
+
+      prisma.auditLog.deleteMany({ where: { affectedRecordId: id } }),
+      prisma.maintenanceRequest.delete({ where: { id } }),
+    ]);
+
+    // Optional: Also delete notifications, but they don't have a strict FK on requestId in schema.
+    await prisma.notification.deleteMany({ where: { requestId: id } });
+
+    return NextResponse.json({ success: true, message: 'Request permanently deleted' });
+  } catch (error) {
+    console.error(`[DELETE /api/admin/requests/${id}]`, error);
+    return NextResponse.json({ error: 'Failed to delete request' }, { status: 500 });
   }
 }

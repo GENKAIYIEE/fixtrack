@@ -7,6 +7,7 @@ export interface UnassignedRequest {
   requestCode: string;
   issueType: string;
   urgencyLevel: string;
+  priorityLevel: string;
   description: string;
   createdAt: string;
   submittedBy?: {
@@ -26,8 +27,8 @@ export default function UnassignedRequestsPanel({
   selectedRequestId,
   onSelect,
 }: UnassignedRequestsPanelProps) {
-  const getUrgencyColors = (urgency: string) => {
-    switch (urgency) {
+  const getPriorityColors = (priority: string) => {
+    switch (priority) {
       case 'URGENT':
         return { bar: 'bg-error', badge: 'bg-error text-white' };
       case 'HIGH':
@@ -73,7 +74,7 @@ export default function UnassignedRequestsPanel({
           </div>
         ) : (
           requests.map((request) => {
-            const colors = getUrgencyColors(request.urgencyLevel);
+            const colors = getPriorityColors(request.priorityLevel || request.urgencyLevel);
             const isSelected = selectedRequestId === request.id;
 
             return (
@@ -92,7 +93,7 @@ export default function UnassignedRequestsPanel({
                     {request.requestCode}
                   </span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${colors.badge}`}>
-                    {request.urgencyLevel}
+                    {request.priorityLevel || request.urgencyLevel}
                   </span>
                 </div>
 
