@@ -107,7 +107,7 @@ export default function UserRequestsPage() {
           </span>
           <p className="font-label-md text-label-md text-on-surface">Failed to load requests: {error}</p>
           <Link
-            href="/user/requests/new"
+            href="/requests/new"
             className="mt-4 bg-secondary text-on-secondary px-6 py-3 rounded-lg font-label-md text-label-md hover:bg-primary transition-colors"
           >
             <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -132,7 +132,7 @@ export default function UserRequestsPage() {
           maintenance request.
         </p>
         <Link
-          href="/user/requests/new"
+          href="/requests/new"
           className="mt-6 bg-secondary text-on-secondary px-6 py-3 rounded-lg font-label-md text-label-md hover:bg-primary transition-colors"
         >
           <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1" }}>
