@@ -65,10 +65,6 @@ export default function TechnicianSidebar() {
 
       {/* Footer Nav */}
       <div className="mt-auto flex flex-col gap-1 px-2 pt-4 border-t border-white/10">
-        <Link href="/technician/settings" className={getLinkClasses('/technician/settings')}>
-          <span className="material-symbols-outlined">settings</span>
-          <span className="font-label-md text-label-md">Settings</span>
-        </Link>
         <button
           onClick={handleLogout}
           className="text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200 text-left w-[calc(100%-16px)]"
