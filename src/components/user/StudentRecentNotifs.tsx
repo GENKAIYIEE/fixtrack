@@ -102,7 +102,7 @@ export default function StudentRecentNotifs({ notifications, unreadCount, isLoad
       // silently fail
     }
     if (notif.requestId) {
-      router.push(`/user/requests/${notif.requestId}`);
+      router.push(`/requests/${notif.requestId}`);
     }
   };
 
@@ -118,7 +118,7 @@ export default function StudentRecentNotifs({ notifications, unreadCount, isLoad
             </span>
           )}
           <Link
-            href="/user/notifications"
+            href="/notifications"
             className="font-label-md text-label-md text-secondary hover:underline underline-offset-4 text-sm"
           >
             View All →

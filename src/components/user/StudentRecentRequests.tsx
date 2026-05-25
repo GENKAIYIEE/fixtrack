@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 type Request = {
   id: string;
@@ -71,7 +70,6 @@ function SkeletonRow() {
 }
 
 export default function StudentRecentRequests({ requests, isLoading }: Props) {
-  const router = useRouter();
 
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
@@ -81,7 +79,7 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
           Recent Requests
         </span>
         <Link
-          href="/user/requests"
+          href="/requests"
           className="font-label-md text-label-md text-secondary hover:underline underline-offset-4"
         >
           View All →
@@ -120,12 +118,6 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                     <span className="font-body-sm text-body-sm text-outline text-sm">
                       Submit your first maintenance request to get started.
                     </span>
-                    <button
-                      onClick={() => router.push('/user/requests/new')}
-                      className="mt-2 bg-secondary text-on-secondary px-4 py-2 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
-                    >
-                      Submit Request
-                    </button>
                   </div>
                 </td>
               </tr>
@@ -141,7 +133,7 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                 >
                   <td className="px-4 py-3">
                     <Link
-                      href={`/user/requests/${req.id}`}
+                      href={`/requests/${req.id}`}
                       className="font-label-md text-label-md text-secondary hover:underline underline-offset-2"
                     >
                       {req.requestCode}
@@ -163,9 +155,9 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                     {formatDate(req.createdAt)}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => router.push(`/user/requests/${req.id}`)}
-                      className="p-1.5 text-secondary hover:bg-primary-fixed rounded transition-colors"
+                    <Link
+                      href={`/requests/${req.id}`}
+                      className="inline-flex p-1.5 text-secondary hover:bg-primary-fixed rounded transition-colors"
                       aria-label={`View request ${req.requestCode}`}
                     >
                       <span
@@ -174,7 +166,7 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                       >
                         visibility
                       </span>
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))

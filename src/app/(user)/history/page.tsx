@@ -106,7 +106,7 @@ function formatTime(dateStr: string) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-outline-variant/30">
-      {[...Array(7)].map((_, i) => (
+      {[...Array(8)].map((_, i) => (
         <td key={i} className="px-5 py-4">
           <div className="h-4 bg-outline-variant/20 rounded-md animate-pulse" />
         </td>
@@ -148,6 +148,8 @@ export default function RequestHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabFilter>('All');
   const [search, setSearch] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
   useEffect(() => {
     fetch('/api/user/history')
@@ -186,6 +188,36 @@ export default function RequestHistoryPage() {
     return list;
   }, [records, activeTab, search]);
 
+  // ── Delete handlers ──────────────────────────────────────────────────────────
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      const res = await fetch(`/api/user/requests/${deleteConfirmId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete request');
+      }
+      setRecords((prev) => (prev ? prev.filter((r) => r.id !== deleteConfirmId) : null));
+      setToast({ message: 'Request cancelled successfully.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err: any) {
+      setToast({ message: err.message || 'An error occurred.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmId(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Page Header */}
@@ -204,9 +236,18 @@ export default function RequestHistoryPage() {
             View all your submitted maintenance requests — track the date, time, and current status.
           </p>
         </div>
-
       </div>
 
+      {/* Stat Cards */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <StatCard icon="inbox" label="Total" value={summary.total} color="bg-[#2563EB]" />
+          <StatCard icon="schedule" label="Pending" value={summary.pending} color="bg-amber-500" />
+          <StatCard icon="engineering" label="Ongoing" value={summary.ongoing} color="bg-blue-500" />
+          <StatCard icon="check_circle" label="Completed" value={summary.completed} color="bg-green-500" />
+          <StatCard icon="cancel" label="Rejected / Cancelled" value={summary.rejected + summary.cancelled} color="bg-red-500" />
+        </div>
+      )}
 
       {/* Card: Filter + Table */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
@@ -286,16 +327,13 @@ export default function RequestHistoryPage() {
                         history
                       </span>
                       <p className="text-on-surface font-semibold text-lg">
-                        {records && records.length === 0
-                          ? 'No requests yet'
-                          : 'No results found'}
+                        {records && records.length === 0 ? 'No requests yet' : 'No results found'}
                       </p>
                       <p className="text-on-surface-variant text-sm max-w-xs text-center">
                         {records && records.length === 0
                           ? 'Once you submit a maintenance request it will appear here.'
                           : 'Try adjusting your search or filter.'}
                       </p>
-
                     </div>
                   </td>
                 </tr>
@@ -367,14 +405,26 @@ export default function RequestHistoryPage() {
 
                       {/* Action */}
                       <td className="px-5 py-4 text-center">
-                        <Link
-                          href={`/requests/${req.id}`}
-                          id={`view-request-${req.id}`}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-[#2563EB]/10 hover:text-[#2563EB] hover:border-[#2563EB]/30 transition-all"
-                          title="View details"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">visibility</span>
-                        </Link>
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/requests/${req.id}`}
+                            id={`view-request-${req.id}`}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-[#2563EB]/10 hover:text-[#2563EB] hover:border-[#2563EB]/30 transition-all"
+                            title="View details"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                          </Link>
+                          {req.status === 'PENDING' && (
+                            <button
+                              onClick={() => handleDelete(req.id)}
+                              id={`delete-request-${req.id}`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-error/10 hover:text-error hover:border-error/30 transition-all"
+                              title="Cancel request"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -396,6 +446,44 @@ export default function RequestHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* Actionable Warning Toast for Deletion */}
+      {deleteConfirmId && (
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 bg-white border border-slate-200 text-slate-800 px-5 py-4 rounded-xl shadow-2xl max-w-sm animate-in slide-in-from-bottom-5">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-500 text-[24px]">warning</span>
+            <p className="text-sm font-medium leading-snug">
+              Are you sure you want to permanently delete this request? This action cannot be undone.
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-2 mt-2">
+            <button
+              onClick={cancelDelete}
+              className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Standard Toast for Success/Error */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl max-w-sm animate-in slide-in-from-bottom-5 ${
+          toast.type === 'success' ? 'bg-emerald-600' : toast.type === 'error' ? 'bg-red-600' : 'bg-amber-500'
+        } text-white`}>
+          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'error' : 'warning'}
+          </span>
+          <p className="text-sm font-medium leading-snug">{toast.message}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -67,7 +67,7 @@ export default function RequestItem({ request, onCancel }: RequestItemProps) {
   return (
     <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
       <Link
-        href={`/user/requests/${request.id}`}
+        href={`/requests/${request.id}`}
         className="block p-6 hover:bg-primary-fixed/20 transition-colors"
       >
         <div className="space-y-4">
