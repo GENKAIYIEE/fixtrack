@@ -64,6 +64,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function RequestItem({ request, onCancel }: RequestItemProps) {
+  return (
     <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
       <Link
         href={`/user/requests/${request.id}`}
