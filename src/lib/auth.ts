@@ -23,8 +23,9 @@ export const authOptions: NextAuthOptions = {
 
           if (!user) return null
 
-          // Verify account is not inactive
-          if (user.accountStatus === 'INACTIVE') return null
+          // Block login for any account that is not explicitly ACTIVE.
+          // This catches both INACTIVE (deactivated) and PENDING (unverified) accounts.
+          if (user.accountStatus !== 'ACTIVE') return null
 
           const isPasswordValid = await bcryptjs.compare(
             credentials.password as string,

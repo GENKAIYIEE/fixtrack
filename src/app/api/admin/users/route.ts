@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
         role,
         specialization: role === 'TECHNICIAN' ? specialization : null,
         passwordHash,
-        accountStatus: accountStatus || 'PENDING',
+        accountStatus: accountStatus || 'ACTIVE',
       },
       select: {
         id: true,
