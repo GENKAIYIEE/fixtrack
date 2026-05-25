@@ -107,7 +107,15 @@ export default function RegisterPage() {
       </div>
       
       {/* Right Panel (Registration Form) */}
-      <div className="w-full lg:w-[55%] h-screen flex flex-col justify-center p-8 overflow-hidden">
+      <div className="w-full lg:w-[55%] h-screen flex flex-col justify-center p-8 overflow-hidden relative">
+        <Link 
+          href="/login" 
+          className="absolute top-8 left-8 inline-flex items-center justify-center w-10 h-10 rounded-full border border-outline-variant text-on-surface hover:bg-surface-container transition-all"
+          title="Back to Login"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_back</span>
+        </Link>
+        
         <div className="w-full max-w-[512px] mx-auto py-6">
           <div className="mb-8">
             <h1 className="font-sans text-h1 text-on-surface mb-2">Create Your Account</h1>

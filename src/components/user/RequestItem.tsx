@@ -18,6 +18,11 @@ type Request = {
   updatedAt: string;
 };
 
+interface RequestItemProps {
+  request: Request;
+  onCancel?: (id: string) => void;
+}
+
 const issueTypeLabels: Record<string, string> = {
   HVAC: 'HVAC',
   ELECTRICAL: 'Electrical',
@@ -58,8 +63,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default function RequestItem({ request }: { request: Request }) {
-  return (
+export default function RequestItem({ request, onCancel }: RequestItemProps) {
     <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
       <Link
         href={`/user/requests/${request.id}`}
@@ -132,6 +136,25 @@ export default function RequestItem({ request }: { request: Request }) {
           </div>
         </div>
       </Link>
+
+      {/* Cancel button — shown only for PENDING requests, rendered outside <Link> to avoid navigation */}
+      {request.status === 'PENDING' && onCancel && (
+        <div className="px-6 pb-4 border-t border-outline-variant/30 bg-surface-container-lowest">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCancel(request.id);
+            }}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg border border-error/40 text-error bg-error-container/10 hover:bg-error-container/30 text-sm font-semibold transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              cancel
+            </span>
+            Cancel Request
+          </button>
+        </div>
+      )}
     </div>
   );
 }

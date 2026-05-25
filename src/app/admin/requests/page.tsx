@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import RequestsFilterBar from '@/components/admin/RequestsFilterBar';
 import AllRequestsTable, { type RequestRow } from '@/components/admin/AllRequestsTable';
 import Pagination from '@/components/admin/Pagination';
-// FIXED: BUG-10 — Import the real RejectRequestModal component
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
+import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal';
+import ToastNotification from '@/components/shared/ToastNotification';
 
 // ── Page Component ────────────────────────────────────────────────────────────
 
@@ -33,9 +34,20 @@ export default function AdminRequestsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // FIXED: BUG-10 — Reject modal state (replaces alert() placeholder)
+  // Reject modal state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+
+  // Delete modal + toast state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // ── Technicians list for More Filters ───────────────────────────────────────
   const [technicians, setTechnicians] = useState<
@@ -159,26 +171,37 @@ export default function AdminRequestsPage() {
     router.push(`/admin/assignments?requestId=${id}`);
   };
 
-  // FIXED: BUG-10 — Replaced alert() placeholder with real modal open
   const handleReject = (id: string) => {
     setRejectingRequestId(id);
     setRejectModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this request? This action cannot be undone.')) {
-      return;
-    }
+  // Open the delete confirmation modal
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setDeleteModalOpen(true);
+  };
+
+  // Execute permanent delete after user confirms in the modal
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/admin/requests/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/requests/${deletingId}`, { method: 'DELETE' });
       if (res.ok) {
+        setDeleteModalOpen(false);
+        setDeletingId(null);
+        showToast('Request permanently deleted.', 'success');
         fetchRequests(page);
       } else {
-        alert('Failed to delete request');
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error ?? 'Failed to delete request. Please try again.', 'error');
       }
     } catch (err) {
-      console.error(err);
-      alert('An error occurred while deleting the request');
+      console.error('[confirmDelete]', err);
+      showToast('An unexpected error occurred. Please try again.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -268,7 +291,6 @@ export default function AdminRequestsPage() {
         />
       )}
 
-      {/* FIXED: BUG-10 — Real RejectRequestModal instead of alert() */}
       <RejectRequestModal
         isOpen={rejectModalOpen}
         onClose={() => {
@@ -278,10 +300,31 @@ export default function AdminRequestsPage() {
         onConfirmed={() => {
           setRejectModalOpen(false);
           setRejectingRequestId(null);
-          // Refresh list so rejected request updates in place
           fetchRequests(page);
         }}
         request={rejectModalRequest}
+      />
+
+      {/* Permanent delete confirmation modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteModalOpen(false);
+            setDeletingId(null);
+          }
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        variant="delete"
+        itemLabel={deletingId ? `REQ-${requests.find(r => r.id === deletingId)?.requestCode ?? ''}` : undefined}
+      />
+
+      {/* Toast feedback */}
+      <ToastNotification
+        message={toast?.message ?? ''}
+        type={toast?.type ?? 'success'}
+        visible={!!toast}
       />
     </div>
   );

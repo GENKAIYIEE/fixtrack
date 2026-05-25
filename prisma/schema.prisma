@@ -13,7 +13,7 @@ model User {
   firstName           String
   lastName            String
   idNumber            String                 @unique
-  department          String
+  department          String?
   role                UserRole
   specialization      Specialization?
   accountStatus       AccountStatus          @default(PENDING)
