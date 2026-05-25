@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
     lastName,
     email,
     idNumber,
-    department,
     contactNumber,
     specialization,
     password,
@@ -41,12 +40,12 @@ export async function POST(request: NextRequest) {
   } = body;
 
   // Server-side validation
-  if (!firstName || !lastName || !email || !idNumber || !department || !specialization || !password) {
+  if (!firstName || !lastName || !email || !idNumber || !specialization || !password) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  if (password.length < 10) {
-    return NextResponse.json({ error: 'Password must be at least 10 characters' }, { status: 400 });
+  if (password.length < 8) {
+    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
   }
 
   try {
@@ -65,14 +64,13 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcryptjs.hash(password, 12);
 
-    // Create user with hardcoded role
+    // Create user with hardcoded role and department
     const newUser = await prisma.user.create({
       data: {
         firstName,
         lastName,
         email,
         idNumber,
-        department,
         contactNumber: contactNumber || null,
         role: 'TECHNICIAN',
         specialization,

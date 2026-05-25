@@ -8,9 +8,6 @@ interface Kpis {
 }
 
 export default function AnalyticsKpiRow({ kpis }: { kpis: Kpis }) {
-  // For total requests trend, we'll just mock a random trend based on the values since we don't have historical comparison data in the API.
-  // The instruction says "trend: ↑ 12% in text-secondary"
-  
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       {/* Total Requests */}
@@ -21,10 +18,6 @@ export default function AnalyticsKpiRow({ kpis }: { kpis: Kpis }) {
         </div>
         <div className="flex items-end justify-between">
           <span className="font-kpi-value text-kpi-value text-on-surface">{kpis.totalRequests}</span>
-          <span className="font-label-md text-label-md text-secondary flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px]">trending_up</span>
-            12%
-          </span>
         </div>
       </div>
 

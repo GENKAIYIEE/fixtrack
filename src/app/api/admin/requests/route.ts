@@ -96,15 +96,12 @@ export async function GET(request: NextRequest) {
       prisma.maintenanceRequest.count({ where }),
     ]);
 
-    // Cap total to 2 as requested to mimic mock data limits
-    const cappedTotal = Math.min(total, 2);
-
     return NextResponse.json({
       requests,
-      total: cappedTotal,
+      total,
       page,
       limit,
-      totalPages: Math.ceil(cappedTotal / limit),
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     console.error('[GET /api/admin/requests]', error);

@@ -220,6 +220,7 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
               {errors.idNumber && <p className={errorClass}>{errors.idNumber}</p>}
             </div>
 
+
             {/* Contact Number */}
             <div>
               <label htmlFor="contactNumber" className={labelClass}>
@@ -305,7 +306,7 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">
-                        {showPassword ? 'visibility_off' : 'visibility'}
+                        {showPassword ? 'visibility' : 'visibility_off'}
                       </span>
                     </button>
                   </div>
@@ -340,7 +341,7 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">
-                        {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                        {showConfirmPassword ? 'visibility' : 'visibility_off'}
                       </span>
                     </button>
                   </div>

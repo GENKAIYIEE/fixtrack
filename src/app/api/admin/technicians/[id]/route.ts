@@ -84,13 +84,12 @@ export async function PUT(
     lastName,
     email,
     idNumber,
-    department,
     contactNumber,
     specialization,
     accountStatus,
   } = body;
 
-  if (!firstName || !lastName || !email || !idNumber || !department || !specialization) {
+  if (!firstName || !lastName || !email || !idNumber || !specialization) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
@@ -128,7 +127,6 @@ export async function PUT(
         lastName,
         email,
         idNumber,
-        department,
         contactNumber: contactNumber || null,
         specialization,
         accountStatus,
@@ -240,8 +238,8 @@ export async function PATCH(
     }
 
     if (newPassword) {
-      if (newPassword.length < 10) {
-        return NextResponse.json({ error: 'Password must be at least 10 characters' }, { status: 400 });
+      if (newPassword.length < 8) {
+        return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
       }
 
       const saltRounds = 12;

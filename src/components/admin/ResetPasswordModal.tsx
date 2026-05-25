@@ -78,7 +78,7 @@ export default function ResetPasswordModal({
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface flex items-center justify-center"
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
+                  {showPassword ? 'visibility' : 'visibility_off'}
                 </span>
               </button>
             </div>
