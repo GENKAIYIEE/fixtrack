@@ -148,8 +148,14 @@ export default function RequestHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabFilter>('All');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_LIMIT = 10;
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, search]);
 
   useEffect(() => {
     fetch('/api/user/history')
@@ -187,6 +193,13 @@ export default function RequestHistoryPage() {
     }
     return list;
   }, [records, activeTab, search]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * PAGE_LIMIT;
+    return filtered.slice(startIndex, startIndex + PAGE_LIMIT);
+  }, [filtered, page]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_LIMIT);
 
   // ── Delete handlers ──────────────────────────────────────────────────────────
   const handleDelete = (id: string) => {
@@ -338,7 +351,7 @@ export default function RequestHistoryPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((req, idx) => {
+                paginatedData.map((req, idx) => {
                   const style = STATUS_STYLES[req.status] ?? STATUS_STYLES['CANCELLED'];
                   return (
                     <tr
@@ -434,15 +447,57 @@ export default function RequestHistoryPage() {
           </table>
         </div>
 
-        {/* Footer count */}
+        {/* Footer count & Pagination */}
         {!isLoading && !error && filtered.length > 0 && (
-          <div className="px-6 py-3 border-t border-outline-variant/40 bg-surface-container/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-3 border-t border-outline-variant/40 bg-surface-container/30 gap-4">
             <p className="text-xs text-on-surface-variant">
-              Showing <span className="font-semibold text-on-surface">{filtered.length}</span>{' '}
+              Showing <span className="font-semibold text-on-surface">{(page - 1) * PAGE_LIMIT + 1}</span> to <span className="font-semibold text-on-surface">{Math.min(page * PAGE_LIMIT, filtered.length)}</span> of <span className="font-semibold text-on-surface">{filtered.length}</span>{' '}
               {activeTab !== 'All' ? `${activeTab.toLowerCase()} ` : ''}
               {filtered.length === 1 ? 'request' : 'requests'}
               {search.trim() ? ` matching "${search.trim()}"` : ''}
             </p>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chevron_left</span>
+                </button>
+                
+                {[...Array(totalPages)].map((_, i) => {
+                  const p = i + 1;
+                  const show = p === 1 || p === totalPages || Math.abs(p - page) <= 1;
+                  if (!show) {
+                    if (p === 2 || p === totalPages - 1) return <span key={p} className="text-outline text-sm px-1">…</span>;
+                    return null;
+                  }
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                        p === page
+                          ? 'bg-[#2563EB] text-white'
+                          : 'text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chevron_right</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

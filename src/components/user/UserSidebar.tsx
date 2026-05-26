@@ -52,7 +52,7 @@ export default function UserSidebar() {
     { name: 'Submit Request', href: '/requests/new', icon: 'add_circle' },
     { name: 'My Requests', href: '/requests', icon: 'assignment' },
     { name: 'Request History', href: '/history', icon: 'history' },
-    { name: 'Notifications', href: '/notifications', icon: 'notifications' },
+    { name: 'Inbox', href: '/notifications', icon: 'inbox' },
   ];
 
   return (
@@ -88,7 +88,7 @@ export default function UserSidebar() {
                 {link.icon}
               </span>
               <span className="font-label-md text-label-md flex-1">{link.name}</span>
-              {link.icon === 'notifications' && unreadCount > 0 && (
+              {link.href === '/notifications' && unreadCount > 0 && (
                 <span className="ml-auto bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
