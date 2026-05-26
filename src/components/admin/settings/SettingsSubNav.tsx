@@ -9,8 +9,6 @@ export default function SettingsSubNav({ activeSection, onSectionChange }: Setti
   const sections = [
     { key: 'general', label: 'General', icon: 'tune' },
     { key: 'notification', label: 'Notification', icon: 'notifications_active' },
-    { key: 'request', label: 'Request', icon: 'assignment_turned_in' },
-    { key: 'security', label: 'Security', icon: 'security' },
   ];
 
   return (

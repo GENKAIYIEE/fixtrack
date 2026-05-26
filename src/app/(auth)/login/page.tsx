@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [platformName, setPlatformName] = useState('FixTrack');
+  const [logoUrl, setLogoUrl] = useState('');
+  
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.platform_name) setPlatformName(data.platform_name);
+        if (data?.logo_url) setLogoUrl(data.logo_url);
+      })
+      .catch(() => {});
+  }, []);
   
   const router = useRouter();
 
@@ -71,10 +84,14 @@ export default function LoginPage() {
         </div>
         <div className="absolute inset-0 z-10 bg-gradient-to-b from-primary-container/40 to-primary-container/90 pointer-events-none"></div>
         <div className="relative z-20 flex flex-col items-center justify-center flex-grow text-center">
-          <div className="flex items-center justify-center w-20 h-20 bg-surface-container-lowest rounded-xl shadow-2xl mb-8">
-            <span className="material-symbols-outlined text-primary-container" style={{ fontSize: '48px', fontVariationSettings: "'FILL' 1" }}>domain</span>
+          <div className="flex items-center justify-center w-20 h-20 bg-surface-container-lowest rounded-xl shadow-2xl mb-8 overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+            ) : (
+              <span className="material-symbols-outlined text-primary-container" style={{ fontSize: '48px', fontVariationSettings: "'FILL' 1" }}>domain</span>
+            )}
           </div>
-          <h1 className="font-h1 text-h1 text-on-primary mb-4 tracking-tighter" style={{ fontSize: '4rem' }}>FixTrack</h1>
+          <h1 className="font-h1 text-h1 text-on-primary mb-4 tracking-tighter" style={{ fontSize: '4rem' }}>{platformName}</h1>
           <p className="font-h2 text-h2 text-primary-fixed-dim font-light">Smart Maintenance. Zero Delays.</p>
         </div>
         <div className="relative z-20 mt-auto">
@@ -109,10 +126,14 @@ export default function LoginPage() {
       <div className="flex-1 lg:w-[40%] bg-surface-container-lowest flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 relative z-10 shadow-[-20px_0_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="w-full max-w-md mx-auto">
           <div className="flex lg:hidden items-center justify-center mb-10 gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-primary-container rounded-lg shadow-md">
-              <span className="material-symbols-outlined text-on-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>domain</span>
+            <div className="flex items-center justify-center w-10 h-10 bg-primary-container rounded-lg shadow-md overflow-hidden">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain bg-white p-1" />
+              ) : (
+                <span className="material-symbols-outlined text-on-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>domain</span>
+              )}
             </div>
-            <span className="font-h2 text-h2 text-primary-container tracking-tighter">FixTrack</span>
+            <span className="font-h2 text-h2 text-primary-container tracking-tighter">{platformName}</span>
           </div>
           
           <div className="mb-10 text-center lg:text-left">
