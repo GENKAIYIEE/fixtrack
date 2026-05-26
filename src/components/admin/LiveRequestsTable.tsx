@@ -69,7 +69,7 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
             </tr>
           </thead>
           <tbody className="font-body-sm text-body-sm text-slate-700 divide-y divide-slate-100">
-            {requests.map((req, index) => {
+            {requests.slice(0, 3).map((req, index) => {
               const label = getDisplayLabel(req);
               const labelClasses = getBadgeClasses(label);
 

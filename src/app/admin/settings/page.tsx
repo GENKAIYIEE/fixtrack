@@ -4,11 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SettingsSubNav from '@/components/admin/settings/SettingsSubNav';
 import GeneralSettings from '@/components/admin/settings/GeneralSettings';
 import NotificationSettings from '@/components/admin/settings/NotificationSettings';
-import RequestSettings from '@/components/admin/settings/RequestSettings';
-import SecuritySettings from '@/components/admin/settings/SecuritySettings';
 import Toast from '@/components/shared/Toast';
 
-const SECTIONS = ['general', 'notification', 'request', 'security'] as const;
+const SECTIONS = ['general', 'notification'] as const;
 type Section = (typeof SECTIONS)[number];
 
 function SkeletonCard() {
@@ -148,8 +146,6 @@ export default function AdminSettingsPage() {
             <>
               <SkeletonCard />
               <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
             </>
           ) : (
             <>
@@ -165,18 +161,6 @@ export default function AdminSettingsPage() {
                 onSave={handleSave}
                 isSaving={savingSection === 'notification'}
                 isActive={activeSection === 'notification'}
-              />
-              <RequestSettings
-                settings={settings}
-                onSave={handleSave}
-                isSaving={savingSection === 'request'}
-                isActive={activeSection === 'request'}
-              />
-              <SecuritySettings
-                settings={settings}
-                onSave={handleSave}
-                isSaving={savingSection === 'security'}
-                isActive={activeSection === 'security'}
               />
             </>
           )}

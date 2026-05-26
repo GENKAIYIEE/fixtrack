@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface GeneralSettingsProps {
   settings: Record<string, string>;
@@ -28,12 +28,31 @@ export default function GeneralSettings({ settings, onSave, isSaving, isActive, 
     });
   }, [settings]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSave = () => {
     onSave('general', formData);
   };
 
   const handleLogoUpload = () => {
-    showToast('File upload coming soon.', 'success');
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('File size must be less than 2MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64String = event.target?.result as string;
+      setFormData({ ...formData, logo_url: base64String });
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -86,6 +105,13 @@ export default function GeneralSettings({ settings, onSave, isSaving, isActive, 
                 >
                   Upload New Logo
                 </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/png, image/jpeg, image/svg+xml"
+                  onChange={handleFileChange}
+                />
                 <p className="text-body-sm text-on-surface-variant">Recommended size: 256x256px (PNG, SVG). Max 2MB.</p>
               </div>
             </div>

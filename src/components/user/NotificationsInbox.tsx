@@ -72,7 +72,9 @@ export default function NotificationsInbox() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [markingId, setMarkingId] = useState<string | null>(null);
+  const [confirmToast, setConfirmToast] = useState<{ show: boolean; targetId?: string; isAll?: boolean }>({ show: false });
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -134,6 +136,13 @@ export default function NotificationsInbox() {
     }
   };
 
+  // ── Delete notification ───────────────────────────────────────────────────────
+
+  const handleDeleteNotif = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setConfirmToast({ show: true, targetId: id, isAll: false });
+  };
+
   // ── Mark all as read ───────────────────────────────────────────────────────
 
   const handleMarkAllRead = async () => {
@@ -151,6 +160,42 @@ export default function NotificationsInbox() {
       fetchNotifications(page);
     } finally {
       setIsMarkingAll(false);
+    }
+  };
+
+  // ── Delete all read ────────────────────────────────────────────────────────
+
+  const handleDeleteAllRead = async () => {
+    const hasRead = notifications.some(n => n.isRead);
+    if (!hasRead || isDeletingAll) return;
+    setConfirmToast({ show: true, isAll: true });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { targetId, isAll } = confirmToast;
+    setConfirmToast({ show: false });
+
+    if (isAll) {
+      setIsDeletingAll(true);
+      // Optimistic delete
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+
+      try {
+        await fetch('/api/notifications/delete-read', { method: 'POST' });
+      } catch {
+        fetchNotifications(page);
+      } finally {
+        setIsDeletingAll(false);
+      }
+    } else if (targetId) {
+      // Optimistic delete
+      setNotifications((prev) => prev.filter((n) => n.id !== targetId));
+
+      try {
+        await fetch(`/api/notifications/${targetId}`, { method: 'DELETE' });
+      } catch {
+        fetchNotifications(page);
+      }
     }
   };
 
@@ -178,16 +223,34 @@ export default function NotificationsInbox() {
           )}
         </div>
 
-        <button
-          id="mark-all-read-btn"
-          onClick={handleMarkAllRead}
-          disabled={isMarkingAll || unreadCount === 0}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all
-            ${unreadCount === 0
-              ? 'text-outline cursor-not-allowed opacity-50'
-              : 'text-secondary hover:bg-secondary-container/40 active:scale-95'
-            }`}
-        >
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDeleteAllRead}
+            disabled={isDeletingAll || !notifications.some(n => n.isRead)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all
+              ${!notifications.some(n => n.isRead)
+                ? 'text-outline cursor-not-allowed opacity-50'
+                : 'text-error hover:bg-error-container/40 active:scale-95'
+              }`}
+          >
+            {isDeletingAll ? (
+              <span className="material-symbols-outlined animate-spin text-base" style={{ fontSize: '16px' }}>progress_activity</span>
+            ) : (
+              <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>delete_sweep</span>
+            )}
+            Delete All Read
+          </button>
+
+          <button
+            id="mark-all-read-btn"
+            onClick={handleMarkAllRead}
+            disabled={isMarkingAll || unreadCount === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all
+              ${unreadCount === 0
+                ? 'text-outline cursor-not-allowed opacity-50'
+                : 'text-secondary hover:bg-secondary-container/40 active:scale-95'
+              }`}
+          >
           {isMarkingAll ? (
             <span
               className="material-symbols-outlined animate-spin text-base"
@@ -202,6 +265,7 @@ export default function NotificationsInbox() {
           )}
           Mark all as read
         </button>
+        </div>
       </div>
 
       {/* ── Card ── */}
@@ -289,19 +353,37 @@ export default function NotificationsInbox() {
                     </p>
                   </div>
 
-                  {/* right-side indicators */}
-                  <div className="shrink-0 flex flex-col items-center gap-2 pt-1">
+                  {/* right-side indicators & actions */}
+                  <div className="shrink-0 flex flex-col items-end gap-2 pt-1">
                     {isUnread && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-secondary block" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-secondary block mb-1" />
                     )}
-                    {notif.requestId && (
-                      <span
-                        className="material-symbols-outlined text-outline"
-                        style={{ fontSize: '16px' }}
+                    
+                    <div className="flex items-center gap-2 mt-auto">
+                      <button
+                        onClick={(e) => handleDeleteNotif(e, notif.id)}
+                        disabled={isUnread}
+                        className={`p-1.5 rounded-full transition-colors flex items-center justify-center ${
+                          isUnread 
+                            ? 'text-outline-variant opacity-50 cursor-not-allowed hidden' 
+                            : 'text-outline hover:text-error hover:bg-error/10'
+                        }`}
+                        title={isUnread ? "Mark as read to delete" : "Delete notification"}
                       >
-                        chevron_right
-                      </span>
-                    )}
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                          delete
+                        </span>
+                      </button>
+
+                      {notif.requestId && (
+                        <span
+                          className="material-symbols-outlined text-outline"
+                          style={{ fontSize: '16px' }}
+                        >
+                          chevron_right
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </li>
               );
@@ -383,6 +465,34 @@ export default function NotificationsInbox() {
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                 chevron_right
               </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Custom Confirmation Toast ── */}
+      {confirmToast.show && (
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 bg-surface-container-highest text-on-surface px-5 py-4 rounded-xl shadow-xl border border-outline-variant/30 max-w-sm animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+            <p className="text-sm font-medium leading-snug">
+              {confirmToast.isAll 
+                ? "Are you sure? All read notifications will be permanently deleted."
+                : "Are you sure? This inbox item will be permanently deleted."}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <button 
+              onClick={() => setConfirmToast({ show: false })}
+              className="px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors rounded-lg"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleConfirmDelete}
+              className="px-3 py-1.5 text-xs font-medium bg-error text-on-error hover:bg-error/90 transition-colors rounded-lg shadow-sm"
+            >
+              Confirm Delete
             </button>
           </div>
         </div>
