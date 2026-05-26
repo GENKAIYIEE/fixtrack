@@ -8,7 +8,7 @@ interface TaskStatusStepperProps {
 export const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ status }) => {
   const getActiveStep = () => {
     if (status === 'COMPLETED') return 4;
-    if (status === 'ONGOING') return 3;
+    if (status === 'ONGOING' || status === 'ON_HOLD') return 3;
     return 2; // PENDING or anything else
   };
 

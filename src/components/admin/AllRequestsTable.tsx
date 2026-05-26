@@ -64,37 +64,7 @@ function formatDate(iso: string): string {
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-function UrgencyBadge({ level }: { level: string }) {
-  switch (level) {
-    case 'URGENT':
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EF4444] text-white">
-          <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-          Urgent
-        </span>
-      );
-    case 'HIGH':
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#F97316] text-white">
-          <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>priority_high</span>
-          High
-        </span>
-      );
-    case 'NORMAL':
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e3e1e9] text-[#444651]">
-          Normal
-        </span>
-      );
-    case 'LOW':
-    default:
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e3e1e9] text-[#444651]">
-          Low
-        </span>
-      );
-  }
-}
+
 
 function PriorityBadge({ level }: { level: string }) {
   switch (level) {
@@ -138,8 +108,16 @@ function StatusBadge({ status }: { status: string }) {
       );
     case 'ONGOING':
       return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#DBEAFE] text-[#1E3A8A]">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
           Ongoing
+        </span>
+      );
+    case 'ON_HOLD':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          On Hold
         </span>
       );
     case 'COMPLETED':
@@ -152,6 +130,12 @@ function StatusBadge({ status }: { status: string }) {
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e3e1e9] text-[#444651]">
           Rejected
+        </span>
+      );
+    case 'APPROVED':
+      return (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#D9F99D] text-[#3F6212]">
+          Approved
         </span>
       );
     case 'CANCELLED':
@@ -169,7 +153,7 @@ function StatusBadge({ status }: { status: string }) {
 function SkeletonRow({ index }: { index: number }) {
   return (
     <tr className={index % 2 === 0 ? 'bg-[#F1F5F9]' : 'bg-white'}>
-      {Array.from({ length: 10 }).map((_, i) => (
+      {Array.from({ length: 9 }).map((_, i) => (
         <td key={i} className="px-4 py-4">
           <div className="h-4 bg-slate-200 rounded animate-pulse" />
         </td>
@@ -215,7 +199,6 @@ export default function AllRequestsTable({
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">ID</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Submitter</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Type &amp; Location</th>
-              <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Urgency</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Priority</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Status</th>
               <th className="px-4 py-4 font-table-header text-table-header uppercase tracking-wider">Assigned To</th>
@@ -231,7 +214,7 @@ export default function AllRequestsTable({
               : requests.length === 0
               ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <span className="material-symbols-outlined text-[48px]">inbox</span>
                       <p className="text-sm font-medium">No requests found</p>
@@ -292,11 +275,6 @@ export default function AllRequestsTable({
                         </div>
                       </td>
 
-                      {/* Urgency */}
-                      <td className="px-4 py-3.5">
-                        <UrgencyBadge level={req.urgencyLevel} />
-                      </td>
-
                       {/* Priority */}
                       <td className="px-4 py-3.5">
                         <PriorityBadge level={req.priorityLevel || 'NORMAL'} />
@@ -337,8 +315,8 @@ export default function AllRequestsTable({
                             <span className="material-symbols-outlined text-[18px]">visibility</span>
                           </button>
 
-                          {/* Assign — only if PENDING and unassigned */}
-                          {req.status === 'PENDING' && !req.assignedToId && (
+                          {/* Assign — only if APPROVED and unassigned */}
+                          {req.status === 'APPROVED' && !req.assignedToId && (
                             <button
                               onClick={() => onAssign(req.id)}
                               title="Assign Technician"

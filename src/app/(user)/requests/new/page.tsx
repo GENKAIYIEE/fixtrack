@@ -82,6 +82,7 @@ export default function NewRequestPage() {
         message: 'Please fill in all required fields',
         type: 'error',
       });
+      setTimeout(() => setToast(null), 6000);
       return;
     }
 
@@ -102,8 +103,16 @@ export default function NewRequestPage() {
         body: formData,
       });
 
+      const responseData = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error('Failed to submit request');
+        const errorMessage =
+          responseData?.error ||
+          responseData?.message ||
+          `Server error (${response.status}). Please try again.`;
+        setToast({ message: errorMessage, type: 'error' });
+        setTimeout(() => setToast(null), 6000);
+        return;
       }
 
       setToast({
@@ -126,11 +135,11 @@ export default function NewRequestPage() {
 
       // Redirect to requests page after 2 seconds
       setTimeout(() => {
-        router.push('/user/requests');
+        router.push('/requests');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       setToast({
-        message: 'Failed to submit request. Please try again.',
+        message: error?.message || 'Failed to submit request. Please try again.',
         type: 'error',
       });
     } finally {
@@ -294,8 +303,8 @@ export default function NewRequestPage() {
               >
                 {loading ? (
                   <>
-                    <span className="material-symbols-outlined mr-2" style={{ fontVariationSettings: "'FILL' 1", animation: 'spin 1s linear infinite' }}>
-                      refreshing
+                    <span className="material-symbols-outlined mr-2 animate-spin" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      progress_activity
                     </span>
                     Submitting...
                   </>

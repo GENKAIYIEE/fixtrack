@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import RequestInfoCard from '@/components/admin/RequestInfoCard';
 import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import ActivityLog from '@/components/admin/ActivityLog';
@@ -45,28 +46,30 @@ interface RequestDetail {
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRejectModal, setShowRejectModal] = useState(false);
 
-  const fetchRequest = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/requests/${id}`);
       if (res.ok) {
         const data = await res.json();
         setRequest(data);
+        router.refresh(); // Invalidate Next.js client router cache
       }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
-    fetchRequest();
-  }, [fetchRequest]);
+    handleRefresh();
+  }, [handleRefresh]);
 
   if (loading) {
     return <div className="p-8 text-center text-slate-500 font-medium">Loading request details...</div>;
@@ -122,7 +125,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             onReject opens the RejectRequestModal via parent state. */}
         <RequestInfoCard
           request={request}
-          onRefresh={fetchRequest}
+          onRefresh={handleRefresh}
           onReject={() => setShowRejectModal(true)}
         />
         <ActivityLog statusHistory={request.statusHistory ?? []} />
@@ -134,7 +137,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
         onClose={() => setShowRejectModal(false)}
         onConfirmed={() => {
           setShowRejectModal(false);
-          fetchRequest();
+          handleRefresh();
         }}
         request={modalRequest}
       />

@@ -18,12 +18,12 @@ export default function RequestStatusStepper({ status, hasRepairNote }: RequestS
         return 'completed'; // Step 1 always completed
       case 2:
         if (status === 'COMPLETED') return 'completed';
-        if (status === 'ONGOING' && !hasRepairNote) return 'active';
-        if (status === 'ONGOING' && hasRepairNote) return 'completed'; 
+        if ((status === 'ONGOING' || status === 'ON_HOLD') && !hasRepairNote) return 'active';
+        if ((status === 'ONGOING' || status === 'ON_HOLD') && hasRepairNote) return 'completed'; 
         return 'pending';
       case 3:
         if (status === 'COMPLETED') return 'completed';
-        if (status === 'ONGOING' && hasRepairNote) return 'active';
+        if ((status === 'ONGOING' || status === 'ON_HOLD') && hasRepairNote) return 'active';
         return 'pending';
       case 4:
         if (status === 'COMPLETED') return 'completed';

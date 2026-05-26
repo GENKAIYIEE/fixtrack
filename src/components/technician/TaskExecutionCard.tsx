@@ -34,7 +34,7 @@ export const TaskExecutionCard: React.FC<TaskExecutionCardProps> = ({
   const [partsReplaced, setPartsReplaced] = useState(request.repairNote?.partsReplaced || '');
   // FIXED: BUG #2/#9 — Pre-select based on actual DB status; 'Pending Review' phantom removed
   const [selectedStatus, setSelectedStatus] = useState(
-    request.status === 'PENDING' ? 'On Hold' : 'Ongoing'
+    request.status === 'ON_HOLD' ? 'On Hold' : 'Ongoing'
   );
   const [confirmComplete, setConfirmComplete] = useState(false);
 
