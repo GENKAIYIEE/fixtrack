@@ -70,7 +70,9 @@ export async function POST(request: Request) {
     const title = formData.get('title') as string;
     const category = formData.get('category') as string;
     const description = formData.get('description') as string;
-    const images = formData.getAll('images') as File[];
+    const images = (formData.getAll('images') as File[]).filter(
+      (f) => f instanceof File && f.size > 0
+    );
 
     // Validate
     if (!title || !title.trim()) {
@@ -111,41 +113,97 @@ export async function POST(request: Request) {
       photoUrl = `/uploads/${filename}`;
     }
 
-    // Create request
-    let parsedCategory = category.toUpperCase();
-    if (parsedCategory === 'OTHER') parsedCategory = 'OTHERS';
+    // Map category value to IssueType enum
+    const categoryMap: Record<string, string> = {
+      plumbing: 'PLUMBING',
+      electrical: 'ELECTRICAL',
+      hvac: 'HVAC',
+      carpentry: 'CARPENTRY',
+      structural: 'STRUCTURAL',
+      other: 'OTHERS',
+      others: 'OTHERS',
+    };
+    const parsedIssueType = categoryMap[category.toLowerCase()] ?? 'OTHERS';
 
-    const newRequest = await prisma.maintenanceRequest.create({
-      data: {
-        issueType: parsedCategory as any,
-        description: `${title.trim()}\n\n${description.trim()}`,
-        photoUrl,
-        submittedById: session.user.id,
-        status: 'PENDING',
-        priorityLevel: 'NORMAL',
-        urgencyLevel: 'NORMAL',
-        requestCode: `REQ-${Date.now().toString().slice(-6)}`,
-        building: 'OTHERS',
-        roomNumber: 'TBD',
-      },
-    });
+    // Generate a collision-safe requestCode using UUID
+    const generateRequestCode = () => `REQ-${uuidv4().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
-    // Create notification for user (optional)
-    await prisma.notification.create({
-      data: {
-        userId: session.user.id,
-        type: 'REQUEST_SUBMITTED',
-        title: 'Request Submitted',
-        message: `Your request "${title.trim()}" has been submitted and is pending review.`,
-        requestId: newRequest.id,
-      },
-    });
+    // Retry up to 3 times in the unlikely event of a code collision
+    let newRequest;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        newRequest = await prisma.maintenanceRequest.create({
+          data: {
+            issueType: parsedIssueType as any,
+            description: `${title.trim()}\n\n${description.trim()}`,
+            photoUrl,
+            submittedById: session.user.id,
+            status: 'PENDING',
+            priorityLevel: 'NORMAL',
+            urgencyLevel: 'NORMAL',
+            requestCode: generateRequestCode(),
+            building: 'OTHERS',
+            roomNumber: 'TBD',
+          },
+        });
+        break; // success
+      } catch (createErr: any) {
+        // P2002 = unique constraint violation (duplicate requestCode)
+        if (createErr?.code === 'P2002' && attempts < 2) {
+          attempts++;
+          continue;
+        }
+        throw createErr; // rethrow non-collision errors or exhausted retries
+      }
+    }
+
+    if (!newRequest) {
+      throw new Error('Failed to create request after multiple attempts.');
+    }
+
+    // Create notification for user
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          type: 'REQUEST_SUBMITTED',
+          title: 'Request Submitted',
+          message: `Your request "${title.trim()}" has been submitted and is pending review.`,
+          requestId: newRequest.id,
+        },
+      });
+    } catch (notifErr) {
+      // Non-critical — log but don't fail the request
+      console.warn('[api/user/requests] Failed to create notification:', notifErr);
+    }
+
+    // Also create an audit log entry for the submission
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: session.user.id,
+          action: 'REQUEST_SUBMITTED',
+          affectedRecordId: newRequest.requestCode,
+          affectedRecordType: 'MaintenanceRequest',
+          details: `Request ${newRequest.requestCode} submitted by user ${session.user.id}`,
+        },
+      });
+    } catch (auditErr) {
+      // Non-critical — log but don't fail the request
+      console.warn('[api/user/requests] Failed to create audit log:', auditErr);
+    }
 
     return NextResponse.json({ success: true, request: newRequest }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[api/user/requests] Error:', error);
+    // Return a meaningful error message to help debug
+    const message =
+      error?.message?.includes('Unique constraint') || error?.code === 'P2002'
+        ? 'A request with this code already exists. Please try again.'
+        : 'Internal Server Error';
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: message },
       { status: 500 }
     );
   }

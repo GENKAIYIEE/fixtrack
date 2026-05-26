@@ -21,8 +21,12 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
         return 'bg-red-100 text-red-800 border-red-200';
       case 'PENDING':
         return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'APPROVED':
+        return 'bg-[#D9F99D] text-[#3F6212] border-[#BEF264]';
       case 'ONGOING':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ON_HOLD':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'COMPLETED':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'REJECTED':
@@ -42,7 +46,11 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
   const getDisplayLabel = (req: Partial<MaintenanceRequest>) => {
     if (req.priorityLevel === 'URGENT') return 'Urgent';
     if (req.status === 'PENDING') return 'Pending';
-    return req.priorityLevel === 'NORMAL' ? 'Normal' : req.status || 'Unknown';
+    if (req.status === 'APPROVED') return 'Approved';
+    if (req.status === 'ONGOING') return 'Ongoing';
+    if (req.status === 'ON_HOLD') return 'On Hold';
+    if (req.status === 'COMPLETED') return 'Completed';
+    return req.status || (req.priorityLevel === 'NORMAL' ? 'Normal' : 'Unknown');
   };
 
   return (

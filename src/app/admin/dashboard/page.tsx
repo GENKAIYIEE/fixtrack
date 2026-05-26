@@ -1,4 +1,8 @@
 import React from 'react';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import KpiCard from '@/components/admin/KpiCard';
 import DashboardLiveRequests from '@/components/admin/DashboardLiveRequests';
 import RequestsBarChart from '@/components/admin/RequestsBarChart';

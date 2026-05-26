@@ -6,6 +6,7 @@ import { TaskStatusStepper } from '@/components/technician/TaskStatusStepper';
 import { TaskRequestInfoCard } from '@/components/technician/TaskRequestInfoCard';
 import { TaskExecutionCard } from '@/components/technician/TaskExecutionCard';
 import { TaskActivityTimeline } from '@/components/technician/TaskActivityTimeline';
+import ToastNotification from '@/components/shared/ToastNotification';
 
 export default function TechnicianTaskDetailPage() {
   const params = useParams();
@@ -16,6 +17,12 @@ export default function TechnicianTaskDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // FIXED: BUG #7 — Wrapped fetchTask in useCallback to satisfy exhaustive-deps
   const fetchTask = useCallback(async () => {
@@ -26,6 +33,7 @@ export default function TechnicianTaskDetailPage() {
       if (!res.ok) throw new Error('Failed to fetch task');
       const data = await res.json();
       setTask(data);
+      router.refresh();
     } catch (error) {
       console.error(error);
     } finally {
@@ -42,12 +50,12 @@ export default function TechnicianTaskDetailPage() {
     setIsSaving(true);
     // FIXED: BUG #2/#9 — Removed phantom 'Pending Review' entry from statusMap
     const statusMap: Record<string, string> = {
-      'On Hold': 'PENDING',
+      'On Hold': 'ON_HOLD',
       'Ongoing': 'ONGOING',
     };
 
     try {
-      await fetch(`/api/technician/tasks/${id}`, {
+      const response = await fetch(`/api/technician/tasks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -57,10 +65,17 @@ export default function TechnicianTaskDetailPage() {
           status: statusMap[data.status],
         }),
       });
-      // Show toast ideally here
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to update task');
+      }
+
+      showToast('Task updated successfully', 'success');
       await fetchTask();
     } catch (error) {
       console.error(error);
+      showToast('Failed to update task', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -74,10 +89,11 @@ export default function TechnicianTaskDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'complete' }),
       });
-      // Show toast ideally here
+      showToast('Task marked as completed', 'success');
       await fetchTask();
     } catch (error) {
       console.error(error);
+      showToast('Failed to complete task', 'error');
     } finally {
       setIsCompleting(false);
     }
@@ -169,6 +185,12 @@ export default function TechnicianTaskDetailPage() {
       <div className="w-full">
         <TaskActivityTimeline task={task} />
       </div>
+
+      <ToastNotification
+        message={toast?.message ?? ''}
+        type={toast?.type ?? 'success'}
+        visible={!!toast}
+      />
     </div>
   );
 }
