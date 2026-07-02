@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession } from 'next-auth/react';
 
-export default function ScanPage() {
+function ScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -48,3 +48,16 @@ export default function ScanPage() {
     </div>
   );
 }
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface-container-lowest">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <ScanContent />
+    </Suspense>
+  );
+}
+
