@@ -283,9 +283,7 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
                 >
                   <option value="" disabled>Select a role...</option>
                   <option value="ADMIN">Administrator</option>
-                  <option value="USER">User</option>
-                  <option value="FACULTY">Faculty</option>
-                  <option value="STAFF">Staff</option>
+                  <option value="STUDENT">Student</option>
                   <option value="TECHNICIAN">Technician</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-lg">
@@ -456,3 +454,4 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
     </form>
   );
 }
+  

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const search = searchParams.get('search')?.trim() ?? '';
   const status = searchParams.get('status')?.trim() ?? '';
-  const urgency = searchParams.get('urgency')?.trim() ?? '';
+  const priority = searchParams.get('priority')?.trim() ?? '';
   const building = searchParams.get('building')?.trim() ?? '';
   const assignedTo = searchParams.get('assignedTo')?.trim() ?? '';
   const issueType = searchParams.get('issueType')?.trim() ?? '';
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const where: Prisma.MaintenanceRequestWhereInput = {};
 
   if (status) where.status = status as Prisma.EnumRequestStatusFilter;
-  if (urgency) where.urgencyLevel = urgency as Prisma.EnumUrgencyLevelFilter;
+  if (priority) where.priorityLevel = priority as Prisma.EnumPriorityLevelFilter;
   if (building) where.building = building as Prisma.EnumBuildingFilter;
   if (assignedTo) where.assignedToId = assignedTo;
   if (issueType) where.issueType = issueType as Prisma.EnumIssueTypeFilter;
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);
     if (dateTo) {
       const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
+      to.setUTCHours(23, 59, 59, 999);
       where.createdAt.lte = to;
     }
   }
@@ -148,12 +148,23 @@ export async function PATCH(request: NextRequest) {
     // Fetch the target requests to get requestCode and current status for history/logs
     const targetRequests = await prisma.maintenanceRequest.findMany({
       where: { id: { in: requestIds } },
-      select: { id: true, requestCode: true, status: true },
+      select: { id: true, requestCode: true, status: true, assignedToId: true },
     });
 
-    // Update all target requests
+    // Strictly filter out any requests that are not APPROVED or are already assigned
+    const validRequests = targetRequests.filter(req => req.status === 'APPROVED' && !req.assignedToId);
+
+    if (validRequests.length === 0) {
+      return NextResponse.json({ 
+        error: 'None of the selected requests are eligible for assignment. They must be APPROVED and unassigned.' 
+      }, { status: 400 });
+    }
+
+    const validRequestIds = validRequests.map(r => r.id);
+
+    // Update ONLY valid requests
     await prisma.maintenanceRequest.updateMany({
-      where: { id: { in: requestIds } },
+      where: { id: { in: validRequestIds } },
       data: {
         assignedToId: technicianId,
         assignedById: auth.userId,
@@ -164,7 +175,7 @@ export async function PATCH(request: NextRequest) {
 
     // Create RequestAssignment records for each
     await prisma.requestAssignment.createMany({
-      data: requestIds.map((requestId) => ({
+      data: validRequestIds.map((requestId) => ({
         requestId,
         assignedToId: technicianId,
         assignedById: auth.userId,
@@ -176,7 +187,7 @@ export async function PATCH(request: NextRequest) {
 
     // FIXED: BUG-13 — Add missing StatusHistory, AuditLog, and Notifications
     // that the single-assign flow creates but the bulk path was silently skipping.
-    for (const req of targetRequests) {
+    for (const req of validRequests) {
       // Status history entry per request
       await prisma.requestStatusHistory.create({
         data: {
@@ -211,7 +222,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, updated: requestIds.length });
+    return NextResponse.json({ success: true, updated: validRequestIds.length });
   } catch (error) {
     console.error('[PATCH /api/admin/requests]', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

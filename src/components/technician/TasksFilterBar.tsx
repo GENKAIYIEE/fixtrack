@@ -12,7 +12,6 @@ interface TasksFilterBarProps {
   setPriorityFilter: (val: string) => void;
   dateFilter: string;
   setDateFilter: (val: string) => void;
-  onFilter: () => void;
 }
 
 export default function TasksFilterBar({
@@ -23,8 +22,7 @@ export default function TasksFilterBar({
   priorityFilter,
   setPriorityFilter,
   dateFilter,
-  setDateFilter,
-  onFilter
+  setDateFilter
 }: TasksFilterBarProps) {
   const [localSearch, setLocalSearch] = useState(search);
 
@@ -97,14 +95,7 @@ export default function TasksFilterBar({
           />
         </div>
 
-        {/* Filter Button */}
-        <button
-          onClick={onFilter}
-          className="bg-secondary-container hover:bg-secondary text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
-        >
-          <span className="material-symbols-outlined text-[20px]">filter_list</span>
-          Filter
-        </button>
+
       </div>
     </div>
   );

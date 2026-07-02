@@ -64,7 +64,7 @@ export async function POST(request: Request) {
         lastName,
         idNumber,
         department,
-        role: 'USER',
+        role: 'STUDENT',
         accountStatus: 'ACTIVE',
       },
     });

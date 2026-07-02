@@ -25,8 +25,8 @@ export default function UserManagementPage() {
 
   const [toastConfig, setToastConfig] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
+  const fetchUsers = useCallback(async (silent = false, signal?: AbortSignal) => {
+    if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
@@ -35,21 +35,33 @@ export default function UserManagementPage() {
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
 
-      const res = await fetch(`/api/admin/users?${params.toString()}`);
+      const res = await fetch(`/api/admin/users?${params.toString()}`, { signal });
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data.users);
       setPagination(data.pagination);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') return; // Ignore aborted requests
       console.error(error);
-      setToastConfig({ show: true, message: 'Failed to load users', type: 'error' });
+      if (!silent) setToastConfig({ show: true, message: 'Failed to load users', type: 'error' });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [search, roleFilter, statusFilter, pagination.page, pagination.limit]);
 
   useEffect(() => {
-    fetchUsers();
+    const controller = new AbortController();
+    fetchUsers(false, controller.signal);
+    
+    // Near Real-Time Background Polling
+    const timer = setInterval(() => {
+      fetchUsers(true, controller.signal);
+    }, 15000);
+    
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
   }, [fetchUsers]);
 
   const handleSearchChange = (value: string) => {
@@ -97,7 +109,7 @@ export default function UserManagementPage() {
       
       setToastConfig({ show: true, message: `User successfully ${newStatus === 'ACTIVE' ? 'reactivated' : 'deactivated'}`, type: 'success' });
       setShowDeactivateModal(false);
-      fetchUsers();
+      fetchUsers(true);
     } catch (error) {
       setToastConfig({ show: true, message: 'Failed to update user status', type: 'error' });
     }

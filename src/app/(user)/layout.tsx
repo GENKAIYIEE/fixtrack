@@ -25,7 +25,7 @@ export default async function UserLayout({
     redirect('/technician/dashboard');
   }
 
-  if (role !== 'USER') {
+  if (role !== 'STUDENT') {
     redirect('/login');
   }
 

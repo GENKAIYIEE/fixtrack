@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Toast from '@/components/shared/Toast';
 import StudentDashboardKpiRow from '@/components/user/StudentDashboardKpiRow';
 import StudentRecentRequests from '@/components/user/StudentRecentRequests';
 import StudentRecentNotifs from '@/components/user/StudentRecentNotifs';
@@ -49,18 +50,41 @@ export default function UserDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'error' | 'success' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
   const firstName = data?.student?.firstName ?? 'Student';
   const department = data?.student?.department ?? '';
 
-  useEffect(() => {
+  const fetchDashboardData = useCallback((isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
     fetch('/api/user/dashboard')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('API Error');
+        return r.json();
+      })
       .then((d: DashboardData) => {
         setData(d);
-        setIsLoading(false);
+        if (!isSilentPoll) setIsLoading(false);
       })
-      .catch(() => setIsLoading(false));
+      .catch(() => {
+        if (!isSilentPoll) {
+          setToast({ show: true, message: 'A network error occurred while loading your dashboard.', type: 'error' });
+          setIsLoading(false);
+        }
+      });
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData(true);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   const showCtaBanner = !isLoading && (data?.kpis.totalRequests ?? 0) === 0;
 
@@ -123,15 +147,23 @@ export default function UserDashboardPage() {
           />
         </div>
 
-        {/* Recent Notifications — right 4 cols */}
         <div className="col-span-12 lg:col-span-4">
           <StudentRecentNotifs
             notifications={data?.recentNotifications ?? null}
             unreadCount={data?.unreadCount ?? 0}
             isLoading={isLoading}
+            onError={(msg) => setToast({ show: true, message: msg, type: 'error' })}
           />
         </div>
       </div>
+
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 }

@@ -6,13 +6,8 @@ import Toast from '@/components/shared/Toast';
 type IssueType = 'HVAC' | 'ELECTRICAL' | 'PLUMBING' | 'CARPENTRY' | 'STRUCTURAL' | 'OTHERS';
 type UrgencyLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 type Building =
-  | 'IT_BUILDING'
-  | 'ADMIN_BUILDING'
-  | 'LIBRARY'
-  | 'GYMNASIUM'
-  | 'CANTEEN'
-  | 'DORMITORY'
-  | 'OTHERS';
+  | 'COLLEGE_BUILDING'
+  | 'BASIC_EDUCATION_BUILDING';
 
 interface RejectRequestModalProps {
   isOpen: boolean;
@@ -29,6 +24,7 @@ interface RejectRequestModalProps {
     urgencyLevel: UrgencyLevel;
     building: Building;
     roomNumber: string;
+    priorityLevel: string;
   } | null;
 }
 
@@ -41,15 +37,7 @@ const ISSUE_ICONS: Record<IssueType, string> = {
   OTHERS: 'build',
 };
 
-const BUILDING_LABELS: Record<Building, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
-  OTHERS: 'Others',
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 const PRESET_CHIPS = ['Duplicate Request', 'Out of Scope', 'Missing Information'];
 
@@ -186,11 +174,11 @@ export default function RejectRequestModal({
                 {isHighUrgency ? (
                   <span className="bg-error text-on-error px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">priority_high</span>
-                    {request.urgencyLevel}
+                    {request.priorityLevel}
                   </span>
                 ) : (
                   <span className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-md text-label-md">
-                    {request.urgencyLevel}
+                    {request.priorityLevel}
                   </span>
                 )}
               </div>
@@ -216,7 +204,7 @@ export default function RejectRequestModal({
                     Location
                   </span>
                   <span className="font-body-sm text-body-sm text-on-surface">
-                    {BUILDING_LABELS[request.building]}, {request.roomNumber}
+                    {getBuildingLabel(request.building)}, {request.roomNumber}
                   </span>
                 </div>
               </div>

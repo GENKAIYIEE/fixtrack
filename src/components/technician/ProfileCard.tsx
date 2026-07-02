@@ -16,9 +16,10 @@ export interface TechnicianProfile {
 
 interface ProfileCardProps {
   user: TechnicianProfile;
+  onAvatarClick?: () => void;
 }
 
-export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
+export const ProfileCard: React.FC<ProfileCardProps> = ({ user, onAvatarClick }) => {
   const getInitials = () => {
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
   };
@@ -41,8 +42,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
   };
 
   const handleAvatarClick = () => {
-    // Show toast for avatar coming soon
-    alert('Avatar upload coming soon.');
+    if (onAvatarClick) {
+      onAvatarClick();
+    }
   };
 
   return (

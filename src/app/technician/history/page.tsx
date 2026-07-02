@@ -1,49 +1,94 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import TasksPagination from '@/components/technician/TasksPagination';
+import Toast from '@/components/shared/Toast';
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
-export const metadata = {
-  title: 'Task History | FixTrack',
-};
+interface HistoryTask {
+  id: string;
+  requestCode: string;
+  issueType: string;
+  description: string;
+  building: string;
+  roomNumber: string;
+  completedAt: string | null;
+  submitter: {
+    firstName: string;
+    lastName: string;
+  };
+  repairNote: {
+    notes: string;
+    partsReplaced: boolean;
+  } | null;
+}
 
-export default async function TaskHistoryPage() {
-  const session = await getServerSession(authOptions);
+export default function TaskHistoryPage() {
+  const [historyTasks, setHistoryTasks] = useState<HistoryTask[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const LIMIT = 10;
 
-  if (!session || session.user.role !== 'TECHNICIAN') {
-    redirect('/login');
-  }
-
-  const technicianId = session.user.id;
-
-  // Fetch all completed tasks for this technician
-  const completedTasks = await prisma.maintenanceRequest.findMany({
-    where: {
-      assignedToId: technicianId,
-      status: 'COMPLETED',
-    },
-    orderBy: {
-      completedAt: 'desc',
-    },
-    include: {
-      submitter: { select: { firstName: true, lastName: true } },
-      repairNote: true,
-    },
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
   });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+  };
+
+  const fetchHistory = useCallback(async (isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
+    try {
+      const res = await fetch(`/api/technician/history?page=${page}&limit=${LIMIT}`);
+      if (!res.ok) throw new Error('Failed to fetch history');
+      const data = await res.json();
+
+      setHistoryTasks(data.history);
+      setTotal(data.pagination.total);
+      setTotalPages(data.pagination.totalPages);
+    } catch (error) {
+      console.error(error);
+      if (!isSilentPoll) showToast('A network error occurred.', 'error');
+    } finally {
+      if (!isSilentPoll) setIsLoading(false);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    fetchHistory();
+    const interval = setInterval(() => {
+      fetchHistory(true);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchHistory]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto w-full">
       <div className="flex items-center gap-4 mb-8">
         <h1 className="font-h1 text-h1 text-on-surface">Task History</h1>
         <div className="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full font-label-md text-label-md">
-          {completedTasks.length} Completed
+          {total} Completed
         </div>
       </div>
 
       <div className="bg-surface rounded-3xl border border-outline-variant overflow-hidden shadow-sm">
-        {completedTasks.length === 0 ? (
+        {isLoading && historyTasks.length === 0 ? (
+          <div className="p-12 flex flex-col items-center justify-center text-center">
+            <span className="material-symbols-outlined animate-spin text-4xl text-primary mb-4">progress_activity</span>
+            <p className="text-on-surface-variant">Loading history...</p>
+          </div>
+        ) : historyTasks.length === 0 ? (
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <span
               className="material-symbols-outlined text-6xl text-outline-variant mb-4"
@@ -67,7 +112,7 @@ export default async function TaskHistoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {completedTasks.map((task) => (
+                {historyTasks.map((task) => (
                   <tr key={task.id} className="hover:bg-surface-container-lowest transition-colors group">
                     <td className="py-4 px-6">
                       <Link href={`/technician/tasks/${task.id}`} className="inline-flex items-center gap-2 text-primary hover:underline font-medium">
@@ -85,8 +130,8 @@ export default async function TaskHistoryPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex flex-col gap-1">
-                        {/* FIXED: BUG #8 — Use regex global flag to replace ALL underscores */}
-                        <span className="text-on-surface">{task.building.replace(/_/g, ' ')}</span>
+                        {/* FIXED: BUG #4 — Use getBuildingLabel utility */}
+                        <span className="text-on-surface">{getBuildingLabel(task.building)}</span>
                         <span className="text-sm text-on-surface-variant">Room {task.roomNumber}</span>
                       </div>
                     </td>
@@ -125,6 +170,27 @@ export default async function TaskHistoryPage() {
           </div>
         )}
       </div>
+
+      {!isLoading && historyTasks.length > 0 && (
+        <div className="mt-6">
+          <TasksPagination
+            total={total}
+            page={page}
+            limit={LIMIT}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 }

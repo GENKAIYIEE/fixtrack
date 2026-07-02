@@ -60,7 +60,7 @@ export default function UsersFilterBar({
           >
             <option value="">All Roles</option>
             <option value="ADMIN">ADMIN</option>
-            <option value="USER">USER</option>
+            <option value="STUDENT">STUDENT</option>
             <option value="TECHNICIAN">TECHNICIAN</option>
           </select>
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">

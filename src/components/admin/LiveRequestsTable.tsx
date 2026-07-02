@@ -77,7 +77,7 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
             </tr>
           </thead>
           <tbody className="font-body-sm text-body-sm text-slate-700 divide-y divide-slate-100">
-            {requests.slice(0, 3).map((req, index) => {
+            {requests.map((req, index) => {
               const label = getDisplayLabel(req);
               const labelClasses = getBadgeClasses(label);
 
@@ -92,7 +92,7 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() => req.id && onView?.(req.id)}
                         className="bg-emerald-500 text-white p-1.5 rounded-md hover:bg-emerald-600 shadow-sm"

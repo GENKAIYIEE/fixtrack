@@ -55,8 +55,8 @@ export default function AssignmentConfirmModal({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-bold text-outline uppercase tracking-wider">{request.requestCode}</span>
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getUrgencyBadge(request.urgencyLevel)}`}>
-                  {request.urgencyLevel}
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getUrgencyBadge(request.priorityLevel || 'NORMAL')}`}>
+                  {request.priorityLevel || 'NORMAL'}
                 </span>
               </div>
               <h3 className="text-sm font-bold text-on-surface">{request.issueType}</h3>
@@ -76,7 +76,7 @@ export default function AssignmentConfirmModal({
             </div>
             <div>
               <h3 className="text-sm font-bold text-on-surface">
-                {technician.firstName} {technician.lastName}
+                {`${technician.firstName} ${technician.lastName || ''}`.trim()}
               </h3>
               <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mt-0.5">
                 {technician.specialization || 'GENERAL'}

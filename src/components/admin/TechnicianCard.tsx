@@ -57,10 +57,10 @@ export default function TechnicianCard({
       onClick={handleClick}
       title={
         isBusy
-          ? `${technician.firstName} ${technician.lastName} is at full capacity (${activeTaskCount}/${MAX_TASKS} tasks)`
+          ? `${technician.firstName} ${technician.lastName || ''}`.trim() + ` is at full capacity (${activeTaskCount}/${MAX_TASKS} tasks)`
           : !isSelectable
           ? 'Select a request first'
-          : `Assign selected request to ${technician.firstName} ${technician.lastName}`
+          : `Assign selected request to ` + `${technician.firstName} ${technician.lastName || ''}`.trim()
       }
       className={`
         relative p-4 rounded-xl border transition-all flex flex-col gap-3
@@ -90,7 +90,7 @@ export default function TechnicianCard({
           {initials}
         </div>
         <h3 className="text-sm font-bold text-on-surface leading-tight">
-          {technician.firstName} {technician.lastName}
+          {`${technician.firstName} ${technician.lastName || ''}`.trim()}
         </h3>
         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mt-0.5">
           {technician.specialization ?? 'GENERAL'}

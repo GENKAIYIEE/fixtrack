@@ -3,15 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-const BUILDING_LABELS: Record<string, string> = {
-  IT_BUILDING: "IT Building",
-  ADMIN_BUILDING: "Admin Building",
-  LIBRARY: "Library",
-  GYMNASIUM: "Gymnasium",
-  CANTEEN: "Canteen",
-  DORMITORY: "Dormitory",
-  OTHERS: "Others",
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,23 +43,16 @@ export async function GET(request: NextRequest) {
       where: { createdAt: { gte: rangeStart } }
     });
 
-    // 2. Avg Resolution Time
-    const completedRequests = await prisma.maintenanceRequest.findMany({
-      where: {
-        status: 'COMPLETED',
-        createdAt: { gte: rangeStart },
-        completedAt: { not: null }
-      },
-      select: { createdAt: true, completedAt: true }
-    });
-
-    let avgResolutionTimeHours = 0;
-    if (completedRequests.length > 0) {
-      const totalMs = completedRequests.reduce((acc, req) => {
-        return acc + (req.completedAt!.getTime() - req.createdAt.getTime());
-      }, 0);
-      avgResolutionTimeHours = Number((totalMs / completedRequests.length / (1000 * 60 * 60)).toFixed(1));
-    }
+    // 2. Avg Resolution Time (Scalable Database Aggregation)
+    const avgResResult = await prisma.$queryRaw<{ avg_hours: number }[]>`
+      SELECT AVG(EXTRACT(EPOCH FROM ("completedAt" - "createdAt")) / 3600) as avg_hours
+      FROM "MaintenanceRequest"
+      WHERE status::text = 'COMPLETED' AND "createdAt" >= ${rangeStart} AND "completedAt" IS NOT NULL
+    `;
+    
+    const avgResolutionTimeHours = avgResResult[0]?.avg_hours 
+      ? Number(Number(avgResResult[0].avg_hours).toFixed(1)) 
+      : 0;
 
     // 3. Top Issue Type
     const topIssueTypes = await prisma.maintenanceRequest.groupBy({
@@ -86,12 +71,13 @@ export async function GET(request: NextRequest) {
     //   2. Empty while-iterator loop (iterated dates but never pushed to dailyVolume)
     // Only the uniqueDaysMap pass below is kept — it correctly populates dailyVolume.
 
-    // 4. Daily Volume — group by YYYY-MM-DD key to avoid cross-week collisions, then format for display
-    // Single query fetches all requests in range; grouping done in application layer
-    const allRequests = await prisma.maintenanceRequest.findMany({
-      where: { createdAt: { gte: rangeStart } },
-      select: { createdAt: true },
-    });
+    // 4. Daily Volume — Scalable Database Aggregation (groups natively by PostgreSQL)
+    const volumeResult = await prisma.$queryRaw<{ date: Date; count: bigint }[]>`
+      SELECT DATE_TRUNC('day', "createdAt") as date, COUNT(id) as count
+      FROM "MaintenanceRequest"
+      WHERE "createdAt" >= ${rangeStart}
+      GROUP BY DATE_TRUNC('day', "createdAt")
+    `;
 
     const dailyVolume: { date: string; count: number }[] = [];
     const end = new Date(now);
@@ -106,12 +92,10 @@ export async function GET(request: NextRequest) {
       iter.setDate(iter.getDate() + 1);
     }
 
-    allRequests.forEach(req => {
-      const key = req.createdAt.toISOString().split('T')[0];
+    volumeResult.forEach(row => {
+      const key = row.date.toISOString().split('T')[0];
       if (uniqueDaysMap.has(key)) {
-        uniqueDaysMap.set(key, uniqueDaysMap.get(key)! + 1);
-      } else {
-        uniqueDaysMap.set(key, 1);
+        uniqueDaysMap.set(key, uniqueDaysMap.get(key)! + Number(row.count));
       }
     });
 
@@ -167,7 +151,7 @@ export async function GET(request: NextRequest) {
     });
 
     const buildingVolume = buildingGroup.map(b => ({
-      building: BUILDING_LABELS[b.building] || b.building,
+      building: getBuildingLabel(b.building),
       count: b._count.building
     }));
 

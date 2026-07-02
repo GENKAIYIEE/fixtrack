@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { BUILDINGS } from '@/lib/constants/buildings';
 
 type FilterBarProps = {
   search: string;
   statusFilter: string;
-  urgencyFilter: string;
+  priorityFilter: string;
   buildingFilter: string;
   assignedToFilter: string;
   issueTypeFilter: string;
@@ -14,7 +15,7 @@ type FilterBarProps = {
   technicians: { id: string; firstName: string; lastName: string }[];
   onSearchChange: (v: string) => void;
   onStatusChange: (v: string) => void;
-  onUrgencyChange: (v: string) => void;
+  onPriorityChange: (v: string) => void;
   onBuildingChange: (v: string) => void;
   onAssignedToChange: (v: string) => void;
   onIssueTypeChange: (v: string) => void;
@@ -33,7 +34,7 @@ const inputClass =
 export default function RequestsFilterBar({
   search,
   statusFilter,
-  urgencyFilter,
+  priorityFilter,
   buildingFilter,
   assignedToFilter,
   issueTypeFilter,
@@ -42,7 +43,7 @@ export default function RequestsFilterBar({
   technicians,
   onSearchChange,
   onStatusChange,
-  onUrgencyChange,
+  onPriorityChange,
   onBuildingChange,
   onAssignedToChange,
   onIssueTypeChange,
@@ -71,6 +72,7 @@ export default function RequestsFilterBar({
                 type="text"
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onApply()}
                 placeholder="ID, Submitter, or Keyword"
                 className={`${inputClass} pl-9`}
               />
@@ -89,24 +91,26 @@ export default function RequestsFilterBar({
             >
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
               <option value="ONGOING">Ongoing</option>
+              <option value="ON_HOLD">On Hold</option>
               <option value="COMPLETED">Completed</option>
               <option value="REJECTED">Rejected</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
 
-          {/* Urgency */}
+          {/* Priority */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-              Urgency
+              Priority
             </label>
             <select
-              value={urgencyFilter}
-              onChange={(e) => onUrgencyChange(e.target.value)}
+              value={priorityFilter}
+              onChange={(e) => onPriorityChange(e.target.value)}
               className={selectClass}
             >
-              <option value="">All Urgencies</option>
+              <option value="">All Priorities</option>
               <option value="URGENT">Urgent</option>
               <option value="HIGH">High</option>
               <option value="NORMAL">Normal</option>
@@ -125,13 +129,9 @@ export default function RequestsFilterBar({
               className={selectClass}
             >
               <option value="">All Buildings</option>
-              <option value="IT_BUILDING">IT Building</option>
-              <option value="ADMIN_BUILDING">Admin Building</option>
-              <option value="LIBRARY">Library</option>
-              <option value="GYMNASIUM">Gymnasium</option>
-              <option value="CANTEEN">Canteen</option>
-              <option value="DORMITORY">Dormitory</option>
-              <option value="OTHERS">Others</option>
+              {BUILDINGS.map(b => (
+                <option key={b.value} value={b.value}>{b.label}</option>
+              ))}
             </select>
           </div>
 

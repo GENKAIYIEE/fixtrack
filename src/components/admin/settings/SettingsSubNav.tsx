@@ -9,6 +9,7 @@ export default function SettingsSubNav({ activeSection, onSectionChange }: Setti
   const sections = [
     { key: 'general', label: 'General', icon: 'tune' },
     { key: 'notification', label: 'Notification', icon: 'notifications_active' },
+    { key: 'qr_code', label: 'QR Code', icon: 'qr_code' },
   ];
 
   return (

@@ -28,9 +28,9 @@ export default async function AdminLayout({
   return (
     <div className="bg-[#F1F5F9] text-slate-900 font-body text-body min-h-screen flex antialiased">
       <AdminSidebar />
-      <div className="flex-1 ml-[260px] flex flex-col min-h-screen">
+      <div className="flex-1 ml-[260px] print:ml-0 flex flex-col min-h-screen">
         <AdminTopBar user={user} />
-        <main className="flex-1 mt-16 p-8 max-w-[1440px] mx-auto w-full">
+        <main className="flex-1 mt-16 print:mt-0 p-8 print:p-0 max-w-[1440px] mx-auto w-full">
           {children}
         </main>
       </div>

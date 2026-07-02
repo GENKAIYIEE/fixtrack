@@ -25,11 +25,10 @@ export default function AuditLogsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [prevSearch, setPrevSearch] = useState('');
-  if (search !== prevSearch) {
-    setPrevSearch(search);
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
     setPage(1);
-  }
+  };
 
   // Handle Search Debounce
   useEffect(() => {
@@ -41,8 +40,8 @@ export default function AuditLogsPage() {
 
   // FIXED: BUG-07 — fetchLogs depends on primitive values (page, debouncedSearch, etc.)
   // not on the pagination object, so it won't re-trigger when a new object is returned.
-  const fetchLogs = useCallback(async () => {
-    setIsLoading(true);
+  const fetchLogs = useCallback(async (silent = false, signal?: AbortSignal) => {
+    if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (debouncedSearch) params.append('search', debouncedSearch);
@@ -52,7 +51,7 @@ export default function AuditLogsPage() {
       params.append('page', page.toString());
       params.append('limit', LIMIT.toString());
 
-      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
+      const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, { signal });
       if (!res.ok) throw new Error('Failed to fetch logs');
 
       const data = await res.json();
@@ -60,16 +59,28 @@ export default function AuditLogsPage() {
       // FIXED: BUG-07 — Set primitive state values instead of whole pagination object
       setTotal(data.pagination?.total ?? data.total ?? 0);
       setTotalPages(data.pagination?.totalPages ?? data.totalPages ?? 1);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') return; // Ignore aborted requests
       console.error(error);
-      setToastConfig({ show: true, message: 'Failed to load audit logs', type: 'error' });
+      if (!silent) setToastConfig({ show: true, message: 'Failed to load audit logs', type: 'error' });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [debouncedSearch, actionFilter, dateFrom, dateTo, page]);
 
   useEffect(() => {
-    fetchLogs();
+    const controller = new AbortController();
+    fetchLogs(false, controller.signal);
+    
+    // Near Real-Time Background Polling
+    const timer = setInterval(() => {
+      fetchLogs(true, controller.signal);
+    }, 15000);
+    
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
   }, [fetchLogs]);
 
   const handleActionChange = (val: string) => {
@@ -113,7 +124,7 @@ export default function AuditLogsPage() {
 
       <AuditLogsFilterBar
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         actionFilter={actionFilter}
         onActionChange={handleActionChange}
         dateFrom={dateFrom}

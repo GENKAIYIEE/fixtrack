@@ -32,19 +32,11 @@ const issueTypeLabels: Record<string, string> = {
   OTHERS: 'Others',
 };
 
-const buildingLabels: Record<string, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
-  OTHERS: 'Others',
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 const statusBadge: Record<string, string> = {
   PENDING:
-    'bg-tertiary-container text-on-tertiary-container rounded-full px-2.5 py-0.5 text-xs font-semibold',
+    'bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-semibold',
   ONGOING:
     'bg-secondary-container text-on-secondary rounded-full px-2.5 py-0.5 text-xs font-semibold',
   COMPLETED:
@@ -101,7 +93,7 @@ export default function RequestItem({ request, onCancel }: RequestItemProps) {
                 Location
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                {buildingLabels[request.building] ?? request.building}{request.roomNumber ? ` — ${request.roomNumber}` : ''}
+                {getBuildingLabel(request.building)}{request.roomNumber ? ` — ${request.roomNumber}` : ''}
               </p>
             </div>
             <div>
@@ -129,7 +121,14 @@ export default function RequestItem({ request, onCancel }: RequestItemProps) {
             </p>
             {request.photoUrl && (
               <img
-                src={request.photoUrl}
+                src={(() => {
+                  try {
+                    const parsed = JSON.parse(request.photoUrl);
+                    return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : request.photoUrl;
+                  } catch (e) {
+                    return request.photoUrl;
+                  }
+                })()}
                 alt="Request photo"
                 className="h-10 w-10 object-cover rounded-lg border border-outline-variant"
               />

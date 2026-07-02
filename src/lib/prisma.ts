@@ -7,11 +7,12 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
+  console.log("==> createPrismaClient called! DATABASE_URL exists:", !!process.env.DATABASE_URL);
   const pool = new Pool({
+    // Use PgBouncer (DATABASE_URL) for runtime to prevent exhausting Supabase direct connections
+    // during Next.js Hot Module Replacement.
     connectionString: process.env.DATABASE_URL,
-    // PgBouncer (Supabase pooler) already manages connections — keep pg.Pool small
-    // to avoid "too many authentication failures" circuit breaker errors.
-    max: process.env.NODE_ENV === 'production' ? 5 : 1,
+    max: process.env.NODE_ENV === 'production' ? 10 : 5,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   })

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import RequestItem from '@/components/user/RequestItem';
 import Link from 'next/link';
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal';
-import ToastNotification from '@/components/shared/ToastNotification';
+import Toast from '@/components/shared/Toast';
 
 type Request = {
   id: string;
@@ -22,9 +22,14 @@ type Request = {
 };
 
 export default function UserRequestsPage() {
-  const [requests, setRequests] = useState<Request[] | null>(null);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Cancel modal state
   const [cancelModal, setCancelModal] = useState<{ open: boolean; id: string | null }>({
@@ -34,36 +39,70 @@ export default function UserRequestsPage() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Toast state
-  const [toast, setToast] = useState<{
-    message: string;
-    type: 'success' | 'error' | 'warning';
-  } | null>(null);
+  const [toast, setToast] = useState<{ show: boolean, message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
-  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
   };
 
-  const fetchRequests = useCallback(() => {
-    setIsLoading(true);
-    fetch('/api/user/requests')
+  const fetchRequests = useCallback((fetchPage = 1, append = false, isSilentPoll = false, currentTotalLimit = 10) => {
+    if (!isSilentPoll && !append) setIsLoading(true);
+    if (append) setIsFetchingMore(true);
+
+    const queryLimit = isSilentPoll ? currentTotalLimit : 10;
+    const queryPage = isSilentPoll ? 1 : fetchPage;
+
+    fetch(`/api/user/requests?page=${queryPage}&limit=${queryLimit}`)
       .then((response) => {
         if (!response.ok) throw new Error('Failed to fetch requests');
         return response.json();
       })
       .then((data) => {
-        setRequests(data.requests);
+        if (append) {
+          setRequests(prev => {
+            const newRequests = [...prev];
+            data.requests.forEach((req: Request) => {
+              if (!newRequests.some(r => r.id === req.id)) {
+                newRequests.push(req);
+              }
+            });
+            return newRequests;
+          });
+        } else {
+          setRequests(data.requests);
+        }
+        setTotalPages(data.pagination.totalPages);
         setIsLoading(false);
+        setIsFetchingMore(false);
       })
       .catch((err) => {
-        setError(err.message);
+        if (!isSilentPoll) setError(err.message);
         setIsLoading(false);
+        setIsFetchingMore(false);
       });
   }, []);
 
   useEffect(() => {
-    fetchRequests();
+    fetchRequests(1, false, false, 10);
+
+    const interval = setInterval(() => {
+      // Pass the current loaded limit to prevent shrinking the list
+      setPage(currentPage => {
+        fetchRequests(1, false, true, currentPage * 10);
+        return currentPage;
+      });
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [fetchRequests]);
+
+  const handleLoadMore = () => {
+    if (page < totalPages) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchRequests(nextPage, true, false, 10);
+    }
+  };
 
   const handleCancelConfirm = async () => {
     if (!cancelModal.id) return;
@@ -73,7 +112,7 @@ export default function UserRequestsPage() {
       if (res.ok) {
         setCancelModal({ open: false, id: null });
         showToast('Your request has been cancelled.', 'success');
-        fetchRequests();
+        fetchRequests(1, false, false, page * 10);
       } else {
         const data = await res.json().catch(() => ({}));
         showToast(data.error ?? 'Failed to cancel request. Please try again.', 'error');
@@ -170,7 +209,7 @@ export default function UserRequestsPage() {
 
         {/* Requests Grid */}
         <div className="grid gap-6">
-          <div className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {requests.map((request) => (
               <RequestItem
                 key={request.id}
@@ -179,6 +218,29 @@ export default function UserRequestsPage() {
               />
             ))}
           </div>
+          
+          {/* Pagination Load More */}
+          {page < totalPages && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={handleLoadMore}
+                disabled={isFetchingMore}
+                className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full font-label-md text-label-md transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isFetchingMore ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>progress_activity</span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>expand_more</span>
+                    Load More
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -192,16 +254,18 @@ export default function UserRequestsPage() {
         isLoading={isCancelling}
         variant="cancel"
         itemLabel={
-          cancellingRequest ? `REQ-${cancellingRequest.requestCode}` : undefined
+          cancellingRequest ? cancellingRequest.requestCode : undefined
         }
       />
 
       {/* Toast feedback */}
-      <ToastNotification
-        message={toast?.message ?? ''}
-        type={toast?.type ?? 'success'}
-        visible={!!toast}
-      />
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 }

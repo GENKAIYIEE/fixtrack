@@ -14,7 +14,7 @@ type ActiveTask = {
   building: string;
   roomNumber: string;
   description: string;
-  urgencyLevel: string;
+  priorityLevel: string;
   status: string;
   createdAt: string;
   submitter: Submitter;
@@ -25,15 +25,7 @@ type ActiveTaskCardsProps = {
   isLoading?: boolean;
 };
 
-const BUILDING_LABELS: Record<string, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
-  OTHERS: 'Others',
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -137,7 +129,7 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                    <UrgencyBadge level={task.urgencyLevel} />
+                    <UrgencyBadge level={task.priorityLevel || 'NORMAL'} />
                     <span className="bg-secondary-container text-white rounded-full px-3 py-1.5 font-sidebar-label text-sidebar-label uppercase">
                       {task.status}
                     </span>
@@ -167,7 +159,7 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
                     <span className="font-sidebar-label text-sidebar-label uppercase">Location</span>
                   </div>
                   <span className="font-body-sm text-body-sm text-on-surface">
-                    {BUILDING_LABELS[task.building] ?? task.building}
+                    {getBuildingLabel(task.building)}
                     {task.roomNumber ? ` — ${task.roomNumber}` : ''}
                   </span>
                 </div>

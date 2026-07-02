@@ -4,10 +4,21 @@ import { useState, useEffect, useCallback } from 'react';
 import TasksFilterBar from '@/components/technician/TasksFilterBar';
 import TasksTable, { TaskRow } from '@/components/technician/TasksTable';
 import TasksPagination from '@/components/technician/TasksPagination';
+import Toast from '@/components/shared/Toast';
 
 export default function TechnicianTasksPage() {
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
+
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+  };
 
   // FIXED: BUG #1 — Separated pagination into primitives to prevent re-render loop
   const [page, setPage] = useState(1);
@@ -23,8 +34,8 @@ export default function TechnicianTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // FIXED: BUG #1 — Deps are now stable primitives; no object-reference churn
-  const fetchTasks = useCallback(async () => {
-    setIsLoading(true);
+  const fetchTasks = useCallback(async (isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -46,22 +57,19 @@ export default function TechnicianTasksPage() {
       setActiveCount(data.activeCount);
     } catch (error) {
       console.error(error);
+      if (!isSilentPoll) showToast('A network error occurred.', 'error');
     } finally {
-      setIsLoading(false);
+      if (!isSilentPoll) setIsLoading(false);
     }
   }, [page, search, statusFilter, priorityFilter, dateFilter]);
 
   useEffect(() => {
     fetchTasks();
+    const interval = setInterval(() => {
+      fetchTasks(true);
+    }, 30000);
+    return () => clearInterval(interval);
   }, [fetchTasks]);
-
-  const handleFilter = () => {
-    if (page !== 1) {
-      setPage(1);
-    } else {
-      fetchTasks();
-    }
-  };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -85,7 +93,6 @@ export default function TechnicianTasksPage() {
         setPriorityFilter={(val) => { setPriorityFilter(val); setPage(1); }}
         dateFilter={dateFilter}
         setDateFilter={(val) => { setDateFilter(val); setPage(1); }}
-        onFilter={handleFilter}
       />
 
       <TasksTable tasks={tasks} isLoading={isLoading} />
@@ -97,6 +104,15 @@ export default function TechnicianTasksPage() {
           limit={LIMIT}
           totalPages={totalPages}
           onPageChange={handlePageChange}
+        />
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
         />
       )}
     </div>

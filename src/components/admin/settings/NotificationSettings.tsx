@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface NotificationSettingsProps {
   settings: Record<string, string>;
@@ -47,16 +47,21 @@ export default function NotificationSettings({ settings, onSave, isSaving, isAct
     notif_request_rejected: true,
   });
 
+  const initialized = useRef(false);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFormData({
-      notif_global_email: settings.notif_global_email === 'true',
-      notif_push: settings.notif_push === 'true',
-      notif_request_submitted: settings.notif_request_submitted === 'true',
-      notif_task_assigned: settings.notif_task_assigned === 'true',
-      notif_request_completed: settings.notif_request_completed === 'true',
-      notif_request_rejected: settings.notif_request_rejected === 'true',
-    });
+    // Only initialize form data once to prevent data loss on cross-section saves
+    if (Object.keys(settings).length > 0 && !initialized.current) {
+      setFormData({
+        notif_global_email: settings.notif_global_email === 'true',
+        notif_push: settings.notif_push === 'true',
+        notif_request_submitted: settings.notif_request_submitted === 'true',
+        notif_task_assigned: settings.notif_task_assigned === 'true',
+        notif_request_completed: settings.notif_request_completed === 'true',
+        notif_request_rejected: settings.notif_request_rejected === 'true',
+      });
+      initialized.current = true;
+    }
   }, [settings]);
 
   const handleSave = () => {

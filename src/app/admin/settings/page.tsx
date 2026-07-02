@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SettingsSubNav from '@/components/admin/settings/SettingsSubNav';
 import GeneralSettings from '@/components/admin/settings/GeneralSettings';
 import NotificationSettings from '@/components/admin/settings/NotificationSettings';
+import QRCodeSettings from '@/components/admin/settings/QRCodeSettings';
 import Toast from '@/components/shared/Toast';
 
-const SECTIONS = ['general', 'notification'] as const;
+const SECTIONS = ['general', 'notification', 'qr_code'] as const;
 type Section = (typeof SECTIONS)[number];
 
 function SkeletonCard() {
@@ -161,6 +162,10 @@ export default function AdminSettingsPage() {
                 onSave={handleSave}
                 isSaving={savingSection === 'notification'}
                 isActive={activeSection === 'notification'}
+              />
+              <QRCodeSettings
+                isActive={activeSection === 'qr_code'}
+                showToast={showToast}
               />
             </>
           )}

@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
           status: 'APPROVED',
           assignedToId: null,
         },
+        take: 200, // Safety limit to prevent memory exhaustion
         include: {
           submitter: { select: { firstName: true, lastName: true } },
         },
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
           role: 'TECHNICIAN',
           accountStatus: 'ACTIVE',
         },
+        take: 1000, // Safety limit for high-volume orgs
         select: {
           id: true,
           firstName: true,
@@ -170,9 +172,9 @@ export async function POST(request: NextRequest) {
 
     // ── Atomic transaction: assign the request ──────────────────────────────
     const updatedRequest = await prisma.$transaction(async (tx) => {
-      // 1. Update the MaintenanceRequest — move to ONGOING
-      const updated = await tx.maintenanceRequest.update({
-        where: { id: requestId },
+      // 1. Update the MaintenanceRequest — move to ONGOING using atomic lock
+      const updated = await tx.maintenanceRequest.updateMany({
+        where: { id: requestId, assignedToId: null, status: 'APPROVED' },
         data: {
           assignedToId: technicianId,
           assignedById: auth.userId,
@@ -182,6 +184,10 @@ export async function POST(request: NextRequest) {
           reviewedAt: now,
         },
       });
+
+      if (updated.count === 0) {
+        throw new Error('CONCURRENCY_CONFLICT');
+      }
 
       // 2. Create RequestAssignment history record
       await tx.requestAssignment.create({
@@ -247,7 +253,10 @@ export async function POST(request: NextRequest) {
       message: `Request ${maintenanceReq.requestCode} successfully assigned to ${techUser.firstName} ${techUser.lastName}.`,
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'CONCURRENCY_CONFLICT') {
+      return NextResponse.json({ error: 'This request was just assigned by another administrator. Please refresh.' }, { status: 409 });
+    }
     console.error('[POST /api/admin/assignments]', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

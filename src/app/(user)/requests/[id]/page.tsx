@@ -3,6 +3,7 @@
 import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import RequestStatusTimeline from '@/components/user/RequestStatusTimeline';
+import PhotoGallery from '@/components/shared/PhotoGallery';
 
 type Status = 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 
@@ -62,28 +63,20 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   OTHERS: 'Others',
 };
 
-const BUILDING_LABELS: Record<string, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
-  OTHERS: 'Others',
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
-const URGENCY_LABELS: Record<string, string> = {
+const PRIORITY_LABELS: Record<string, string> = {
   LOW: 'Low',
-  MEDIUM: 'Medium',
+  NORMAL: 'Normal',
   HIGH: 'High',
-  CRITICAL: 'Critical',
+  URGENT: 'Urgent',
 };
 
-const URGENCY_STYLES: Record<string, string> = {
-  LOW: 'bg-slate-100 text-slate-600',
-  MEDIUM: 'bg-yellow-100 text-yellow-700',
-  HIGH: 'bg-orange-100 text-orange-700',
-  CRITICAL: 'bg-red-100 text-red-700',
+const PRIORITY_STYLES: Record<string, string> = {
+  LOW: 'bg-slate-100 text-slate-600 border border-slate-200',
+  NORMAL: 'bg-blue-50 text-blue-700 border border-blue-200',
+  HIGH: 'bg-orange-50 text-orange-700 border border-orange-200',
+  URGENT: 'bg-red-50 text-red-700 border border-red-200',
 };
 
 function formatDate(dateStr: string) {
@@ -202,10 +195,40 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
 
         {/* ── Status Timeline ───────────────────────────────────────────────── */}
         <div className="pt-4 border-t border-slate-100">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">
-            Request Progress
-          </p>
-          <RequestStatusTimeline status={request.status} />
+          {request.status === 'REJECTED' || request.status === 'CANCELLED' ? (
+            <div className={`w-full p-6 rounded-xl border flex flex-col items-center justify-center text-center ${
+              request.status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                request.status === 'REJECTED' ? 'bg-red-100' : 'bg-slate-200'
+              }`}>
+                <span className={`material-symbols-outlined text-3xl ${
+                  request.status === 'REJECTED' ? 'text-red-500' : 'text-slate-500'
+                }`}>
+                  {request.status === 'REJECTED' ? 'cancel' : 'block'}
+                </span>
+              </div>
+              <h3 className={`font-bold text-xl mb-1 ${
+                request.status === 'REJECTED' ? 'text-red-700' : 'text-slate-700'
+              }`}>
+                {request.status === 'REJECTED' ? 'Request Rejected' : 'Request Cancelled'}
+              </h3>
+              <p className={`text-sm ${
+                request.status === 'REJECTED' ? 'text-red-600/80' : 'text-slate-500'
+              }`}>
+                {request.status === 'REJECTED' 
+                  ? (request.rejectionReason ? `Reason: ${request.rejectionReason}` : 'This request has been rejected and will not be processed further.') 
+                  : (request.cancellationReason ? `Reason: ${request.cancellationReason}` : 'This request has been cancelled.')}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">
+                Request Progress
+              </p>
+              <RequestStatusTimeline status={request.status} />
+            </>
+          )}
         </div>
       </div>
 
@@ -216,15 +239,15 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <InfoRow icon="build" label="Issue Type" value={ISSUE_TYPE_LABELS[request.issueType] ?? request.issueType} />
-          <InfoRow icon="location_on" label="Location" value={`${BUILDING_LABELS[request.building] ?? request.building}, Room ${request.roomNumber}`} />
+          <InfoRow icon="location_on" label="Location" value={`${getBuildingLabel(request.building)}, Room ${request.roomNumber}`} />
           {request.locationNotes && (
             <InfoRow icon="sticky_note_2" label="Location Notes" value={request.locationNotes} />
           )}
           <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Urgency</p>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${URGENCY_STYLES[request.urgencyLevel] ?? 'bg-slate-100 text-slate-600'}`}>
-              <span className="material-symbols-outlined text-[14px]">priority_high</span>
-              {URGENCY_LABELS[request.urgencyLevel] ?? request.urgencyLevel}
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Priority</p>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${PRIORITY_STYLES[request.priorityLevel] ?? 'bg-slate-100 text-slate-600'}`}>
+              <span className="material-symbols-outlined text-[14px]">flag</span>
+              {PRIORITY_LABELS[request.priorityLevel] ?? request.priorityLevel}
             </span>
           </div>
           <InfoRow icon="update" label="Last Updated" value={formatDate(request.updatedAt)} />
@@ -238,25 +261,15 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="p-6">
           <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{request.description}</p>
+          <div className="mt-4">
+            <PhotoGallery
+              photoUrl={request.photoUrl || null}
+              label="Your Submitted Photos"
+            />
+          </div>
         </div>
       </div>
 
-      {/* ── Rejection / Cancellation Reason ──────────────────────────────────── */}
-      {(request.rejectionReason || request.cancellationReason) && (
-        <div className={`rounded-xl border p-5 ${request.rejectionReason ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`material-symbols-outlined text-[20px] ${request.rejectionReason ? 'text-red-500' : 'text-slate-400'}`}>
-              {request.rejectionReason ? 'cancel' : 'block'}
-            </span>
-            <p className={`text-sm font-semibold ${request.rejectionReason ? 'text-red-700' : 'text-slate-600'}`}>
-              {request.rejectionReason ? 'Rejection Reason' : 'Cancellation Reason'}
-            </p>
-          </div>
-          <p className={`text-sm ${request.rejectionReason ? 'text-red-600' : 'text-slate-600'}`}>
-            {request.rejectionReason ?? request.cancellationReason}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

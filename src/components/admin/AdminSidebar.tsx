@@ -49,7 +49,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-[260px] h-full fixed left-0 top-0 border-r border-white/10 shadow-2xl bg-[#1E3A8A] text-blue-600 font-['Inter'] antialiased tracking-tight z-50 flex flex-col py-6">
+    <aside className="print:hidden w-[260px] h-full fixed left-0 top-0 border-r border-white/10 shadow-2xl bg-[#1E3A8A] text-blue-600 font-['Inter'] antialiased tracking-tight z-50 flex flex-col py-6">
       <div className="px-6 mb-8 flex flex-col gap-1">
         <div className="flex items-center gap-3">
           {logoUrl && (

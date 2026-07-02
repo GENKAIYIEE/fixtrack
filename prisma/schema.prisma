@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 model User {
@@ -162,11 +162,8 @@ model SystemSettings {
 
 enum UserRole {
   STUDENT
-  FACULTY
-  STAFF
   TECHNICIAN
   ADMIN
-  USER
 }
 
 enum AccountStatus {
@@ -209,13 +206,8 @@ enum IssueType {
 }
 
 enum Building {
-  IT_BUILDING
-  ADMIN_BUILDING
-  LIBRARY
-  GYMNASIUM
-  CANTEEN
-  DORMITORY
-  OTHERS
+  COLLEGE_BUILDING
+  BASIC_EDUCATION_BUILDING
 }
 
 enum Specialization {

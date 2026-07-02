@@ -74,7 +74,7 @@ export default function UnassignedRequestsPanel({
           </div>
         ) : (
           requests.map((request) => {
-            const colors = getPriorityColors(request.priorityLevel || request.urgencyLevel);
+            const colors = getPriorityColors(request.priorityLevel || 'NORMAL');
             const isSelected = selectedRequestId === request.id;
 
             return (
@@ -93,7 +93,7 @@ export default function UnassignedRequestsPanel({
                     {request.requestCode}
                   </span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${colors.badge}`}>
-                    {request.priorityLevel || request.urgencyLevel}
+                    {request.priorityLevel || 'NORMAL'}
                   </span>
                 </div>
 

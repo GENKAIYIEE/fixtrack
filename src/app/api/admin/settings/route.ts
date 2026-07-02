@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         action: 'USER_UPDATED',
         details: `[SETTINGS] System settings updated by admin`,
         affectedRecordType: 'SystemSettings',
-        affectedRecordId: Object.keys(settings).join(', '),
+        affectedRecordId: settings.map((s: { key: string; value: string }) => s.key).join(', '),
       }
     });
 
