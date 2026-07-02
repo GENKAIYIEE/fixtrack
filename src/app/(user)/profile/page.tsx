@@ -1,43 +1,128 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function UserProfilePage() {
-  // 1. Fetch user session
-  const session = await getServerSession(authOptions);
+import { useState, useEffect, useCallback } from 'react';
+import Toast from '@/components/shared/Toast';
 
-  if (!session?.user?.email) {
-    redirect('/login');
-  }
+type UserProfile = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  idNumber: string;
+  department: string | null;
+  contactNumber: string | null;
+  role: string;
+  accountStatus: string;
+  createdAt: string;
+};
 
-  // 2. Fetch real student data from DB based on session
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      firstName: true,
-      lastName: true,
-      email: true,
-      idNumber: true,
-      department: true,
-      contactNumber: true,
-      role: true,
-      accountStatus: true,
-      createdAt: true,
-    },
-  });
+export default function UserProfilePage() {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!user) {
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ department: '', contactNumber: '' });
+
+  const [toast, setToast] = useState<{ show: boolean, message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+  };
+
+  const fetchProfile = useCallback(async (isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
+    try {
+      const res = await fetch('/api/user/profile');
+      if (!res.ok) {
+        if (res.status === 401) window.location.href = '/login';
+        throw new Error('Failed to load profile');
+      }
+      const data = await res.json();
+      setUser(data);
+    } catch (err: any) {
+      if (!isSilentPoll) setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile(false);
+
+    // 30-second silent background poll for true real-time sync
+    const interval = setInterval(() => {
+      fetchProfile(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchProfile]);
+
+  const handleEditClick = () => {
+    if (!user) return;
+    setEditForm({
+      department: user.department || '',
+      contactNumber: user.contactNumber || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    // Optimistic Update
+    const prevUser = user;
+    setUser(prevUser ? {
+      ...prevUser,
+      department: editForm.department || null,
+      contactNumber: editForm.contactNumber || null
+    } : null);
+
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          department: editForm.department || null,
+          contactNumber: editForm.contactNumber || null
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update profile');
+      
+      const updatedUser = await res.json();
+      setUser(updatedUser);
+      setIsEditModalOpen(false);
+      showToast('Profile updated successfully', 'success');
+    } catch (err: any) {
+      // Revert on failure
+      setUser(prevUser);
+      showToast(err.message || 'An error occurred', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto py-12 flex flex-col items-center text-center">
-        <span className="material-symbols-outlined text-error text-6xl mb-4">error</span>
-        <h2 className="text-xl font-bold text-on-surface">User profile not found.</h2>
-        <p className="text-outline mt-2">Please contact the administration.</p>
+      <div className="max-w-4xl mx-auto py-12 flex flex-col items-center justify-center min-h-[400px]">
+        <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">progress_activity</span>
+        <p className="text-outline font-medium">Loading profile...</p>
       </div>
     );
   }
 
-  // 3. Premium UI Layout
+  if (error || !user) {
+    return (
+      <div className="max-w-4xl mx-auto py-12 flex flex-col items-center text-center min-h-[400px] justify-center">
+        <span className="material-symbols-outlined text-error text-6xl mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+        <h2 className="text-xl font-bold text-on-surface">User profile not found.</h2>
+        <p className="text-outline mt-2">{error || "Please contact the administration."}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-10 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -66,6 +151,15 @@ export default async function UserProfilePage() {
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
           
+          {/* Edit Button */}
+          <button
+            onClick={handleEditClick}
+            className="absolute top-6 right-6 z-20 bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-sm transition-all hover:scale-105 active:scale-95 border border-white/10"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Edit Profile
+          </button>
+
           <div className="flex items-center gap-8 relative z-10">
             {/* Premium Avatar */}
             <div className="relative group">
@@ -93,7 +187,7 @@ export default async function UserProfilePage() {
                 </span>
               </div>
               
-              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white px-3 py-1.5 rounded-full mt-4 self-start shadow-sm border border-white/10 transition-transform duration-300 hover:scale-105 cursor-default">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white px-3 py-1.5 rounded-full mt-4 self-start shadow-sm border border-white/10 transition-transform duration-300 cursor-default">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
                   verified_user
                 </span>
@@ -180,6 +274,95 @@ export default async function UserProfilePage() {
 
         </div>
       </div>
+
+      {/* ── Edit Modal ── */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isSaving && setIsEditModalOpen(false)} />
+          <div className="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md border border-outline-variant overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-outline-variant/60 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">edit</span>
+                Edit Profile
+              </h2>
+              <button 
+                onClick={() => setIsEditModalOpen(false)} 
+                disabled={isSaving}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-outline transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-6 space-y-4 bg-surface-container-lowest">
+              <div className="space-y-1">
+                <label htmlFor="department" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Department</label>
+                <input
+                  id="department"
+                  type="text"
+                  value={editForm.department}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
+                  placeholder="e.g. College of Computer Studies"
+                  disabled={isSaving}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="contactNumber" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Contact Number</label>
+                <input
+                  id="contactNumber"
+                  type="text"
+                  value={editForm.contactNumber}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, contactNumber: e.target.value }))}
+                  placeholder="e.g. 09123456789"
+                  disabled={isSaving}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-outline-variant/60 bg-surface-container/30 flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-highest transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70"
+              >
+                {isSaving ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">save</span>
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standard Toast for Success/Error */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
+        />
+      )}
     </div>
   );
 }

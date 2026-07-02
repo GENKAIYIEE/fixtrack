@@ -37,6 +37,7 @@ export default function TechnicianProfilePage() {
       });
     } catch (error) {
       console.error(error);
+      setToast({ message: 'A network error occurred while loading your profile.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +147,10 @@ export default function TechnicianProfilePage() {
           {/* Left column */}
           <div className="md:col-span-4 flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-both">
             <div className="hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-              <ProfileCard user={profile} />
+              <ProfileCard 
+                user={profile} 
+                onAvatarClick={() => setToast({ message: 'Avatar upload coming soon.', type: 'success' })} 
+              />
             </div>
             <div className="hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
               <ProfileSecurityCard />

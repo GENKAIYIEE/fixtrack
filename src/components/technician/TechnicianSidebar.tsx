@@ -15,6 +15,7 @@ export default function TechnicianSidebar() {
 
   const navLinks = [
     { name: 'Dashboard',    href: '/technician/dashboard', icon: 'dashboard' },
+    { name: 'Inbox',        href: '/technician/notifications', icon: 'inbox' },
     { name: 'My Tasks',     href: '/technician/tasks',     icon: 'build' },
     { name: 'Task History', href: '/technician/history',   icon: 'history' },
     { name: 'My Profile',   href: '/technician/profile',   icon: 'person' },

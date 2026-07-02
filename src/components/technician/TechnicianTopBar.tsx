@@ -53,9 +53,7 @@ export default function TechnicianTopBar({ firstName, lastName }: TechnicianTopB
               </span>
             )}
           </button>
-          <button className="hover:bg-slate-50 rounded-full p-2 transition-all text-slate-500">
-            <span className="material-symbols-outlined">help_outline</span>
-          </button>
+
         </div>
 
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">

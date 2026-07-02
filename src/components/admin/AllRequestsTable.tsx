@@ -231,7 +231,7 @@ export default function AllRequestsTable({
                     ? `${req.submitter.firstName} ${req.submitter.lastName}`
                     : 'Unknown';
                   const assigneeName = req.assignee
-                    ? `${req.assignee.firstName} ${req.assignee.lastName}`
+                    ? `${req.assignee.firstName} ${req.assignee.lastName}`.trim()
                     : null;
 
                   return (

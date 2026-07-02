@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import PhotoGallery from '@/components/shared/PhotoGallery';
 
 interface RequestInfoCardProps {
   request: any;
@@ -10,8 +11,6 @@ interface RequestInfoCardProps {
 }
 
 export default function RequestInfoCard({ request, onRefresh, onReject }: RequestInfoCardProps) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [prioritySaved, setPrioritySaved] = useState(false);
 
@@ -86,16 +85,6 @@ export default function RequestInfoCard({ request, onRefresh, onReject }: Reques
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
-  const openLightbox = (url: string) => {
-    setLightboxImage(url);
-    setLightboxOpen(true);
-  };
-
-  const closeLightbox = () => {
-    setLightboxOpen(false);
-    setLightboxImage(null);
-  };
-
   const isPending = request.status === 'PENDING';
   const isTerminal = request.status === 'REJECTED' || request.status === 'CANCELLED' || request.status === 'COMPLETED';
   const priorityChanged = priorityLevel !== (request.priorityLevel || 'NORMAL');
@@ -106,8 +95,8 @@ export default function RequestInfoCard({ request, onRefresh, onReject }: Reques
         {/* Card Header */}
         <div className="bg-primary-container p-6 flex justify-between items-center">
           <h2 className="text-white text-2xl font-bold">{request.issueType} in {request.building}</h2>
-          <span className={`px-3 py-1 text-xs font-bold uppercase rounded-full ${getUrgencyBadge(request.urgencyLevel)}`}>
-            {request.urgencyLevel}
+          <span className={`px-3 py-1 text-xs font-bold uppercase rounded-full ${getUrgencyBadge(priorityLevel)}`}>
+            {priorityLevel}
           </span>
         </div>
 
@@ -153,22 +142,13 @@ export default function RequestInfoCard({ request, onRefresh, onReject }: Reques
           </div>
 
           {/* Attached Images */}
-          {request.photoUrl && (
-            <div className="md:col-span-2">
-              <p className="text-sm text-on-surface-variant mb-2">Attached Images</p>
-              <div className="flex gap-4">
-                {request.photoUrl.split(',').map((url: string, idx: number) => (
-                  <button
-                    key={idx}
-                    onClick={() => openLightbox(url.trim())}
-                    className="w-32 h-32 relative rounded-lg overflow-hidden border border-outline-variant hover:opacity-90 transition-opacity"
-                  >
-                    <img src={url.trim()} alt="Attached evidence" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="md:col-span-2 mt-4">
+            <div className="h-px w-full bg-surface-variant my-2" />
+            <PhotoGallery
+              photoUrl={request.photoUrl}
+              label="Student Photo Evidence"
+            />
+          </div>
         </div>
 
         {/* ── Priority Management — always visible for active requests ── */}
@@ -286,19 +266,6 @@ export default function RequestInfoCard({ request, onRefresh, onReject }: Reques
           </div>
         )}
       </div>
-
-      {/* Lightbox Overlay */}
-      {lightboxOpen && lightboxImage && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <button
-            onClick={closeLightbox}
-            className="absolute top-6 right-6 text-white hover:text-gray-300"
-          >
-            <span className="material-symbols-outlined text-4xl">close</span>
-          </button>
-          <img src={lightboxImage} alt="Enlarged evidence" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
-        </div>
-      )}
     </>
   );
 }

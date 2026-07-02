@@ -3,7 +3,7 @@
 // Full types will be expanded after schema modeling phase
 // ============================================================
 
-export type UserRole = 'USER' | 'TECHNICIAN' | 'ADMIN'
+export type UserRole = 'STUDENT' | 'TECHNICIAN' | 'ADMIN';
 
 export type RequestStatus = 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED'
 

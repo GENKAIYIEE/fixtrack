@@ -10,7 +10,7 @@ export interface TaskRow {
   issueType: string;
   building: string;
   roomNumber: string;
-  urgencyLevel: string;
+  priorityLevel: string;
   status: string;
   assignedAt: string;
   completedAt: string | null;
@@ -37,18 +37,7 @@ const getIssueTypeLabel = (type: string) => {
   return map[type] || type;
 };
 
-const getBuildingLabel = (building: string) => {
-  const map: Record<string, string> = {
-    IT_BUILDING: 'IT Building',
-    ADMIN_BUILDING: 'Admin Building',
-    LIBRARY: 'Library',
-    GYMNASIUM: 'Gymnasium',
-    CANTEEN: 'Canteen',
-    DORMITORY: 'Dormitory',
-    OTHERS: 'Others'
-  };
-  return map[building] || building;
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '-';
@@ -143,16 +132,16 @@ export default function TasksTable({ tasks, isLoading }: TasksTableProps) {
                       {getBuildingLabel(task.building)} {task.roomNumber}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {task.urgencyLevel === 'URGENT' && (
+                      {task.priorityLevel === 'URGENT' && (
                         <span className="bg-error text-on-error rounded-full px-2.5 py-0.5 text-xs font-semibold">Urgent</span>
                       )}
-                      {task.urgencyLevel === 'HIGH' && (
+                      {task.priorityLevel === 'HIGH' && (
                         <span className="bg-tertiary-container text-white rounded-full px-2.5 py-0.5 text-xs font-semibold">High</span>
                       )}
-                      {task.urgencyLevel === 'NORMAL' && (
+                      {task.priorityLevel === 'NORMAL' && (
                         <span className="bg-surface-container-high text-on-surface-variant border border-outline-variant rounded-full px-2.5 py-0.5 text-xs font-semibold">Normal</span>
                       )}
-                      {task.urgencyLevel === 'LOW' && (
+                      {task.priorityLevel === 'LOW' && (
                         <span className="bg-surface-container-high text-on-surface-variant border border-outline-variant rounded-full px-2.5 py-0.5 text-xs font-semibold">Low</span>
                       )}
                     </td>

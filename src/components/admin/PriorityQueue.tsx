@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { MaintenanceRequest } from '@prisma/client';
 
@@ -9,6 +9,14 @@ type PriorityQueueProps = {
 };
 
 export default function PriorityQueue({ urgentRequests }: PriorityQueueProps) {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    // Re-render every minute to keep relative timestamps fresh
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const formatBuilding = (building?: string) => {
     if (!building) return '';
     return building.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

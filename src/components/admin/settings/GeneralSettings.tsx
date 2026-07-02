@@ -18,14 +18,20 @@ export default function GeneralSettings({ settings, onSave, isSaving, isActive, 
     support_email: '',
   });
 
+  const initialized = useRef(false);
+  
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFormData({
-      platform_name: settings.platform_name || 'FixTrack — Polytechnic College of La Union',
-      institution_name: settings.institution_name || 'Polytechnic College of La Union',
-      logo_url: settings.logo_url || '',
-      support_email: settings.support_email || 'support@pclu.edu.ph',
-    });
+    // Only initialize form data once when settings are successfully loaded
+    // to prevent cross-save data loss when another section's save updates the settings object reference.
+    if (Object.keys(settings).length > 0 && !initialized.current) {
+      setFormData({
+        platform_name: settings.platform_name || 'FixTrack — Polytechnic College of La Union',
+        institution_name: settings.institution_name || 'Polytechnic College of La Union',
+        logo_url: settings.logo_url || '',
+        support_email: settings.support_email || 'support@pclu.edu.ph',
+      });
+      initialized.current = true;
+    }
   }, [settings]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);

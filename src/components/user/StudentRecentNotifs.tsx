@@ -18,6 +18,7 @@ type Props = {
   notifications: Notification[] | null;
   unreadCount: number;
   isLoading: boolean;
+  onError: (message: string) => void;
 };
 
 type IconConfig = {
@@ -88,18 +89,19 @@ function SkeletonItem() {
   );
 }
 
-export default function StudentRecentNotifs({ notifications, unreadCount, isLoading }: Props) {
+export default function StudentRecentNotifs({ notifications, unreadCount, isLoading, onError }: Props) {
   const router = useRouter();
 
   const handleNotifClick = async (notif: Notification) => {
     try {
-      await fetch('/api/notifications/mark-read', {
+      const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: notif.id }),
       });
+      if (!res.ok) throw new Error('Failed');
     } catch {
-      // silently fail
+      onError('Failed to update notification.');
     }
     if (notif.requestId) {
       router.push(`/requests/${notif.requestId}`);

@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Toast from '@/components/shared/Toast';
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 type RequestRecord = {
   id: string;
@@ -34,16 +36,6 @@ const issueTypeLabels: Record<string, string> = {
   PLUMBING: 'Plumbing',
   CARPENTRY: 'Carpentry',
   STRUCTURAL: 'Structural',
-  OTHERS: 'Others',
-};
-
-const buildingLabels: Record<string, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
   OTHERS: 'Others',
 };
 
@@ -142,23 +134,38 @@ function StatCard({
 }
 
 export default function RequestHistoryPage() {
-  const [records, setRecords] = useState<RequestRecord[] | null>(null);
+  const [records, setRecords] = useState<RequestRecord[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
   const [activeTab, setActiveTab] = useState<TabFilter>('All');
   const [search, setSearch] = useState('');
+  
+  // Pagination State
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalFiltered, setTotalFiltered] = useState(0);
   const PAGE_LIMIT = 10;
+
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  const [toast, setToast] = useState<{ show: boolean, message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
-  useEffect(() => {
-    setPage(1);
-  }, [activeTab, search]);
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ show: true, message, type });
+  };
 
-  useEffect(() => {
-    fetch('/api/user/history')
+  const fetchRequests = useCallback((fetchPage: number, fetchTab: TabFilter, fetchSearch: string, isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
+
+    const params = new URLSearchParams();
+    params.set('page', fetchPage.toString());
+    params.set('limit', PAGE_LIMIT.toString());
+    const statusVal = tabToStatus[fetchTab];
+    if (statusVal) params.set('status', statusVal);
+    if (fetchSearch.trim()) params.set('search', fetchSearch.trim());
+
+    fetch(`/api/user/history?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load history');
         return res.json();
@@ -166,40 +173,37 @@ export default function RequestHistoryPage() {
       .then((data) => {
         setRecords(data.requests);
         setSummary(data.summary);
+        setTotalPages(data.pagination.totalPages);
+        setTotalFiltered(data.pagination.total);
         setIsLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        if (!isSilentPoll) setError(err.message);
         setIsLoading(false);
       });
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!records) return [];
-    let list = records;
-    const statusFilter = tabToStatus[activeTab];
-    if (statusFilter) {
-      list = list.filter((r) => r.status === statusFilter);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.requestCode.toLowerCase().includes(q) ||
-          r.title.toLowerCase().includes(q) ||
-          (issueTypeLabels[r.issueType] ?? r.issueType).toLowerCase().includes(q) ||
-          (buildingLabels[r.building] ?? r.building).toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [records, activeTab, search]);
+  // Effect for Filters & Pagination
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchRequests(page, activeTab, search, false);
+    }, 300); // Debounce search
+    return () => clearTimeout(handler);
+  }, [page, activeTab, search, fetchRequests]);
 
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_LIMIT;
-    return filtered.slice(startIndex, startIndex + PAGE_LIMIT);
-  }, [filtered, page]);
+  // Effect for True Real-Time Polling
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Poll current page silently
+      fetchRequests(page, activeTab, search, true);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [page, activeTab, search, fetchRequests]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_LIMIT);
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, search]);
 
   // ── Delete handlers ──────────────────────────────────────────────────────────
   const handleDelete = (id: string) => {
@@ -216,12 +220,11 @@ export default function RequestHistoryPage() {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to delete request');
       }
-      setRecords((prev) => (prev ? prev.filter((r) => r.id !== deleteConfirmId) : null));
-      setToast({ message: 'Request cancelled successfully.', type: 'success' });
-      setTimeout(() => setToast(null), 3000);
+      showToast('Request cancelled successfully.', 'success');
+      // Refetch to securely sync stats and page items
+      fetchRequests(page, activeTab, search, false);
     } catch (err: any) {
-      setToast({ message: err.message || 'An error occurred.', type: 'error' });
-      setTimeout(() => setToast(null), 3000);
+      showToast(err.message || 'An error occurred.', 'error');
     } finally {
       setDeleteConfirmId(null);
     }
@@ -323,13 +326,13 @@ export default function RequestHistoryPage() {
                   <td colSpan={8} className="py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <span className="material-symbols-outlined text-error" style={{ fontSize: '40px' }}>
-                        error
+                         error
                       </span>
                       <p className="text-on-surface-variant font-medium">{error}</p>
                     </div>
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : records.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
@@ -340,10 +343,10 @@ export default function RequestHistoryPage() {
                         history
                       </span>
                       <p className="text-on-surface font-semibold text-lg">
-                        {records && records.length === 0 ? 'No requests yet' : 'No results found'}
+                        {summary?.total === 0 ? 'No requests yet' : 'No results found'}
                       </p>
                       <p className="text-on-surface-variant text-sm max-w-xs text-center">
-                        {records && records.length === 0
+                        {summary?.total === 0
                           ? 'Once you submit a maintenance request it will appear here.'
                           : 'Try adjusting your search or filter.'}
                       </p>
@@ -351,7 +354,7 @@ export default function RequestHistoryPage() {
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((req, idx) => {
+                records.map((req, idx) => {
                   const style = STATUS_STYLES[req.status] ?? STATUS_STYLES['CANCELLED'];
                   return (
                     <tr
@@ -384,7 +387,7 @@ export default function RequestHistoryPage() {
 
                       {/* Location */}
                       <td className="px-5 py-4 text-on-surface-variant text-sm whitespace-nowrap">
-                        {buildingLabels[req.building] ?? req.building}
+                        {getBuildingLabel(req.building)}
                         {req.roomNumber ? (
                           <span className="text-outline"> — {req.roomNumber}</span>
                         ) : null}
@@ -448,12 +451,12 @@ export default function RequestHistoryPage() {
         </div>
 
         {/* Footer count & Pagination */}
-        {!isLoading && !error && filtered.length > 0 && (
+        {!isLoading && !error && records.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-3 border-t border-outline-variant/40 bg-surface-container/30 gap-4">
             <p className="text-xs text-on-surface-variant">
-              Showing <span className="font-semibold text-on-surface">{(page - 1) * PAGE_LIMIT + 1}</span> to <span className="font-semibold text-on-surface">{Math.min(page * PAGE_LIMIT, filtered.length)}</span> of <span className="font-semibold text-on-surface">{filtered.length}</span>{' '}
+              Showing <span className="font-semibold text-on-surface">{(page - 1) * PAGE_LIMIT + 1}</span> to <span className="font-semibold text-on-surface">{Math.min(page * PAGE_LIMIT, totalFiltered)}</span> of <span className="font-semibold text-on-surface">{totalFiltered}</span>{' '}
               {activeTab !== 'All' ? `${activeTab.toLowerCase()} ` : ''}
-              {filtered.length === 1 ? 'request' : 'requests'}
+              {totalFiltered === 1 ? 'request' : 'requests'}
               {search.trim() ? ` matching "${search.trim()}"` : ''}
             </p>
 
@@ -529,15 +532,12 @@ export default function RequestHistoryPage() {
       )}
 
       {/* Standard Toast for Success/Error */}
-      {toast && (
-        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl max-w-sm animate-in slide-in-from-bottom-5 ${
-          toast.type === 'success' ? 'bg-emerald-600' : toast.type === 'error' ? 'bg-red-600' : 'bg-amber-500'
-        } text-white`}>
-          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'error' : 'warning'}
-          </span>
-          <p className="text-sm font-medium leading-snug">{toast.message}</p>
-        </div>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, show: false })}
+        />
       )}
     </div>
   );

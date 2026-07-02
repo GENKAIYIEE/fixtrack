@@ -26,19 +26,11 @@ const issueTypeLabels: Record<string, string> = {
   OTHERS: 'Others',
 };
 
-const buildingLabels: Record<string, string> = {
-  IT_BUILDING: 'IT Building',
-  ADMIN_BUILDING: 'Admin Building',
-  LIBRARY: 'Library',
-  GYMNASIUM: 'Gymnasium',
-  CANTEEN: 'Canteen',
-  DORMITORY: 'Dormitory',
-  OTHERS: 'Others',
-};
+import { getBuildingLabel } from '@/lib/constants/buildings';
 
 const statusBadge: Record<string, string> = {
   PENDING:
-    'bg-tertiary-container text-on-tertiary-container rounded-full px-2.5 py-0.5 text-xs font-semibold',
+    'bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-semibold',
   ONGOING:
     'bg-secondary-container text-on-secondary rounded-full px-2.5 py-0.5 text-xs font-semibold',
   COMPLETED:
@@ -47,6 +39,8 @@ const statusBadge: Record<string, string> = {
     'bg-error-container text-on-error-container rounded-full px-2.5 py-0.5 text-xs font-semibold',
   CANCELLED:
     'bg-surface-variant text-on-surface-variant rounded-full px-2.5 py-0.5 text-xs font-semibold',
+  UNKNOWN:
+    'bg-slate-100 text-slate-700 border border-slate-200 rounded-full px-2.5 py-0.5 text-xs font-semibold',
 };
 
 function formatDate(dateStr: string) {
@@ -143,11 +137,11 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                     {issueTypeLabels[req.issueType] ?? req.issueType}
                   </td>
                   <td className="px-4 py-3 font-body-sm text-body-sm text-on-surface-variant text-sm">
-                    {buildingLabels[req.building] ?? req.building}
+                    {getBuildingLabel(req.building)}
                     {req.roomNumber ? ` — ${req.roomNumber}` : ''}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={statusBadge[req.status] ?? statusBadge['CANCELLED']}>
+                    <span className={statusBadge[req.status] ?? statusBadge['UNKNOWN']}>
                       {req.status.charAt(0) + req.status.slice(1).toLowerCase()}
                     </span>
                   </td>

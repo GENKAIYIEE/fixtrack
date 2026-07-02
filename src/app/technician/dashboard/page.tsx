@@ -25,7 +25,7 @@ type ActiveTask = {
   building: string;
   roomNumber: string;
   description: string;
-  urgencyLevel: string;
+  priorityLevel: string;
   status: string;
   createdAt: string;
   submitter: Submitter;
@@ -64,13 +64,19 @@ export default function TechnicianDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/technician/dashboard')
-      .then((r) => r.json())
-      .then((d: DashboardData) => {
-        setData(d);
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
+    const fetchDashboardData = () => {
+      fetch('/api/technician/dashboard')
+        .then((r) => r.json())
+        .then((d: DashboardData) => {
+          setData(d);
+          setIsLoading(false);
+        })
+        .catch(() => setIsLoading(false));
+    };
+
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const technician = data?.technician;
@@ -110,7 +116,7 @@ export default function TechnicianDashboardPage() {
                   build_circle
                 </span>
                 <span className="font-sidebar-label text-sidebar-label uppercase">
-                  Technician — {specializationLabel} Specialist
+                  Technician — {technician?.specialization ? `${specializationLabel} Specialist` : 'General Maintenance'}
                 </span>
               </div>
             </>

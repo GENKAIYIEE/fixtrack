@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (isUserRoute && token?.role !== 'USER') {
+  if (isUserRoute && token?.role !== 'STUDENT') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

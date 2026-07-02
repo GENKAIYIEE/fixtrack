@@ -10,7 +10,7 @@ export default function AdminTopBar({ user }: { user: UserProps }) {
   const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'AD';
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 border-b border-slate-200 shadow-sm bg-white/80 backdrop-blur-md flex justify-between items-center px-8 h-16">
+    <header className="print:hidden fixed top-0 right-0 w-[calc(100%-260px)] z-40 border-b border-slate-200 shadow-sm bg-white/80 backdrop-blur-md flex justify-between items-center px-8 h-16">
       <div className="flex items-center gap-4">
         <h1 className="font-h2 text-h2 text-slate-900">FixTrack Monitoring</h1>
         {/* FIXED: BUG-11 — Removed empty badge span that rendered as a visual artifact */}

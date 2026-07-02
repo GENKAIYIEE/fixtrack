@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
+import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,8 +79,8 @@ export default function NotificationsInbox() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  const fetchNotifications = useCallback(async (targetPage = 1) => {
-    setIsLoading(true);
+  const fetchNotifications = useCallback(async (targetPage = 1, isSilentPoll = false) => {
+    if (!isSilentPoll) setIsLoading(true);
     try {
       const res = await fetch(
         `/api/notifications?page=${targetPage}&limit=${PAGE_LIMIT}`
@@ -93,13 +94,20 @@ export default function NotificationsInbox() {
     } catch {
       // fail silently — network error
     } finally {
-      setIsLoading(false);
+      if (!isSilentPoll) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchNotifications(1);
-  }, [fetchNotifications]);
+    
+    // 30-second silent background poll for true real-time sync
+    const interval = setInterval(() => {
+      fetchNotifications(page, true);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [fetchNotifications, page]);
 
   // ── Mark single as read ────────────────────────────────────────────────────
 
@@ -470,33 +478,17 @@ export default function NotificationsInbox() {
         </div>
       )}
 
-      {/* ── Custom Confirmation Toast ── */}
-      {confirmToast.show && (
-        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 bg-surface-container-highest text-on-surface px-5 py-4 rounded-xl shadow-xl border border-outline-variant/30 max-w-sm animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-            <p className="text-sm font-medium leading-snug">
-              {confirmToast.isAll 
-                ? "Are you sure? All read notifications will be permanently deleted."
-                : "Are you sure? This inbox item will be permanently deleted."}
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 mt-1">
-            <button 
-              onClick={() => setConfirmToast({ show: false })}
-              className="px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors rounded-lg"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleConfirmDelete}
-              className="px-3 py-1.5 text-xs font-medium bg-error text-on-error hover:bg-error/90 transition-colors rounded-lg shadow-sm"
-            >
-              Confirm Delete
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── Standard Confirmation Modal ── */}
+      <ConfirmDeleteModal
+        isOpen={confirmToast.show}
+        onClose={() => setConfirmToast({ show: false })}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeletingAll}
+        title={confirmToast.isAll ? "Delete All Read Notifications" : "Delete Notification"}
+        description={confirmToast.isAll 
+          ? "Are you sure you want to permanently delete all read notifications? This action cannot be undone."
+          : "Are you sure you want to permanently delete this notification? This action cannot be undone."}
+      />
     </div>
   );
 }

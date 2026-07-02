@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import RequestsFilterBar from '@/components/admin/RequestsFilterBar';
 import AllRequestsTable, { type RequestRow } from '@/components/admin/AllRequestsTable';
@@ -8,6 +8,8 @@ import Pagination from '@/components/admin/Pagination';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal';
 import ToastNotification from '@/components/shared/ToastNotification';
+// AutoRefresh removed to fix redundant polling
+import BulkAssignModal from '@/components/admin/BulkAssignModal';
 
 // ── Page Component ────────────────────────────────────────────────────────────
 
@@ -27,16 +29,33 @@ export default function AdminRequestsPage() {
   // ── Filter state ─────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [urgencyFilter, setUrgencyFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [buildingFilter, setBuildingFilter] = useState('');
   const [assignedToFilter, setAssignedToFilter] = useState('');
   const [issueTypeFilter, setIssueTypeFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // ── Filter state refs to prevent stale closures and keystroke DDOS ────────────
+  const filtersRef = useRef({
+    search, statusFilter, priorityFilter, buildingFilter,
+    assignedToFilter, issueTypeFilter, dateFrom, dateTo, page
+  });
+
+  // Keep refs up to date without triggering re-renders of fetchRequests
+  useEffect(() => {
+    filtersRef.current = {
+      search, statusFilter, priorityFilter, buildingFilter,
+      assignedToFilter, issueTypeFilter, dateFrom, dateTo, page
+    };
+  }, [search, statusFilter, priorityFilter, buildingFilter, assignedToFilter, issueTypeFilter, dateFrom, dateTo, page]);
+
   // Reject modal state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+
+  // Bulk assign modal state
+  const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState(false);
 
   // Delete modal + toast state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -58,7 +77,7 @@ export default function AdminRequestsPage() {
   useEffect(() => {
     async function loadTechnicians() {
       try {
-        const res = await fetch('/api/users?role=TECHNICIAN&limit=100');
+        const res = await fetch('/api/users?role=TECHNICIAN&limit=1000');
         if (res.ok) {
           const data = await res.json();
           setTechnicians(data.users ?? []);
@@ -74,22 +93,23 @@ export default function AdminRequestsPage() {
   // FIXED: BUG-02 & BUG-03 — fetchRequests accepts an explicit pageOverride so it
   // can be called with a known page number without waiting for React state to flush.
   const fetchRequests = useCallback(
-    async (overridePage?: number, reset?: boolean) => {
-      setIsLoading(true);
+    async (overridePage?: number, reset?: boolean, silent = false) => {
+      if (!silent) setIsLoading(true);
       try {
+        const currentFilters = filtersRef.current;
         const params = new URLSearchParams();
-        params.set('page', String(overridePage ?? page));
+        params.set('page', String(overridePage ?? currentFilters.page));
         params.set('limit', '10');
         
         if (!reset) {
-          if (search) params.set('search', search);
-          if (statusFilter) params.set('status', statusFilter);
-          if (urgencyFilter) params.set('urgency', urgencyFilter);
-          if (buildingFilter) params.set('building', buildingFilter);
-          if (assignedToFilter) params.set('assignedTo', assignedToFilter);
-          if (issueTypeFilter) params.set('issueType', issueTypeFilter);
-          if (dateFrom) params.set('dateFrom', dateFrom);
-          if (dateTo) params.set('dateTo', dateTo);
+          if (currentFilters.search) params.set('search', currentFilters.search);
+          if (currentFilters.statusFilter) params.set('status', currentFilters.statusFilter);
+          if (currentFilters.priorityFilter) params.set('priority', currentFilters.priorityFilter);
+          if (currentFilters.buildingFilter) params.set('building', currentFilters.buildingFilter);
+          if (currentFilters.assignedToFilter) params.set('assignedTo', currentFilters.assignedToFilter);
+          if (currentFilters.issueTypeFilter) params.set('issueType', currentFilters.issueTypeFilter);
+          if (currentFilters.dateFrom) params.set('dateFrom', currentFilters.dateFrom);
+          if (currentFilters.dateTo) params.set('dateTo', currentFilters.dateTo);
         }
 
         const res = await fetch(`/api/admin/requests?${params.toString()}`);
@@ -102,24 +122,28 @@ export default function AdminRequestsPage() {
       } catch (err) {
         console.error('Failed to fetch requests:', err);
       } finally {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [page, search, statusFilter, urgencyFilter, buildingFilter, assignedToFilter, issueTypeFilter, dateFrom, dateTo]
+    [] // Empty dependency array prevents the Keystroke DDOS bug
   );
-
-
 
   // FIXED: BUG-03 — Removed the broad [page] useEffect that caused double-fetches
   // when filter handlers also called fetchRequests(1). Page changes are now handled
   // exclusively via handlePageChange below.
 
-  // ── Initial load ─────────────────────────────────────────────────────────────
+  // ── Initial load & Real-time Polling ─────────────────────────────────────────
   useEffect(() => {
     fetchRequests(1);
+    
+    // Real-time background polling every 15 seconds
+    const timer = setInterval(() => {
+      fetchRequests(undefined, false, true);
+    }, 15000);
+    
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRequests]);
 
   // ── Filter handlers ──────────────────────────────────────────────────────────
   const handleApply = () => {
@@ -131,7 +155,7 @@ export default function AdminRequestsPage() {
   const handleReset = () => {
     setSearch('');
     setStatusFilter('');
-    setUrgencyFilter('');
+    setPriorityFilter('');
     setBuildingFilter('');
     setAssignedToFilter('');
     setIssueTypeFilter('');
@@ -221,14 +245,16 @@ export default function AdminRequestsPage() {
         },
         issueType: rejectingRequest.issueType as 'HVAC' | 'ELECTRICAL' | 'PLUMBING' | 'CARPENTRY' | 'STRUCTURAL' | 'OTHERS',
         urgencyLevel: rejectingRequest.urgencyLevel as 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT',
-        building: rejectingRequest.building as 'IT_BUILDING' | 'ADMIN_BUILDING' | 'LIBRARY' | 'GYMNASIUM' | 'CANTEEN' | 'DORMITORY' | 'OTHERS',
+        building: rejectingRequest.building as 'COLLEGE_BUILDING' | 'BASIC_EDUCATION_BUILDING',
         roomNumber: rejectingRequest.roomNumber,
+        priorityLevel: rejectingRequest.priorityLevel,
       }
     : null;
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="w-full">
+      {/* AutoRefresh removed to prevent redundant polling */}
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -245,7 +271,7 @@ export default function AdminRequestsPage() {
       <RequestsFilterBar
         search={search}
         statusFilter={statusFilter}
-        urgencyFilter={urgencyFilter}
+        priorityFilter={priorityFilter}
         buildingFilter={buildingFilter}
         assignedToFilter={assignedToFilter}
         issueTypeFilter={issueTypeFilter}
@@ -254,7 +280,7 @@ export default function AdminRequestsPage() {
         technicians={technicians}
         onSearchChange={setSearch}
         onStatusChange={setStatusFilter}
-        onUrgencyChange={setUrgencyFilter}
+        onPriorityChange={setPriorityFilter}
         onBuildingChange={setBuildingFilter}
         onAssignedToChange={setAssignedToFilter}
         onIssueTypeChange={setIssueTypeFilter}
@@ -265,7 +291,31 @@ export default function AdminRequestsPage() {
       />
 
       {/* ── Bulk Action Bar — appears when checkboxes are selected ── */}
-
+      {selectedIds.length > 0 && (
+        <div className="bg-[#DBEAFE] border border-[#BFDBFE] rounded-xl px-5 py-3 mb-6 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
+          <div className="flex items-center gap-3 text-[#1E3A8A]">
+            <span className="material-symbols-outlined text-[20px]">check_box</span>
+            <span className="font-semibold text-sm">
+              {selectedIds.length} request{selectedIds.length > 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="text-sm font-medium text-[#1E3A8A] hover:underline"
+            >
+              Clear Selection
+            </button>
+            <button
+              onClick={() => setBulkAssignModalOpen(true)}
+              className="bg-[#2563EB] hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">group_add</span>
+              Bulk Assign
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Table ── */}
       <AllRequestsTable
@@ -303,6 +353,21 @@ export default function AdminRequestsPage() {
           fetchRequests(page);
         }}
         request={rejectModalRequest}
+      />
+
+      {/* Bulk Assign modal */}
+      <BulkAssignModal
+        isOpen={bulkAssignModalOpen}
+        requests={requests}
+        selectedIds={selectedIds}
+        technicians={technicians}
+        onClose={() => setBulkAssignModalOpen(false)}
+        onAssigned={() => {
+          setBulkAssignModalOpen(false);
+          setSelectedIds([]);
+          showToast(`Successfully assigned ${selectedIds.length} request(s).`, 'success');
+          fetchRequests(page);
+        }}
       />
 
       {/* Permanent delete confirmation modal */}

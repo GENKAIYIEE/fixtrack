@@ -11,33 +11,23 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'USER') {
+    if (session.user.role !== 'STUDENT') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const studentId = session.user.id;
 
     const [
-      totalRequests,
-      pendingCount,
-      ongoingCount,
-      completedCount,
+      statusCounts,
       recentRequests,
       recentNotifications,
       unreadCount,
       student,
     ] = await Promise.all([
-      prisma.maintenanceRequest.count({
+      prisma.maintenanceRequest.groupBy({
+        by: ['status'],
         where: { submittedById: studentId },
-      }),
-      prisma.maintenanceRequest.count({
-        where: { submittedById: studentId, status: 'PENDING' },
-      }),
-      prisma.maintenanceRequest.count({
-        where: { submittedById: studentId, status: 'ONGOING' },
-      }),
-      prisma.maintenanceRequest.count({
-        where: { submittedById: studentId, status: 'COMPLETED' },
+        _count: { status: true },
       }),
       prisma.maintenanceRequest.findMany({
         where: { submittedById: studentId },
@@ -66,6 +56,11 @@ export async function GET() {
         select: { firstName: true, department: true }
       }),
     ]);
+
+    const pendingCount = statusCounts.find(s => s.status === 'PENDING')?._count.status || 0;
+    const ongoingCount = statusCounts.find(s => s.status === 'ONGOING')?._count.status || 0;
+    const completedCount = statusCounts.find(s => s.status === 'COMPLETED')?._count.status || 0;
+    const totalRequests = statusCounts.reduce((acc, curr) => acc + curr._count.status, 0);
 
     return NextResponse.json({
       student,

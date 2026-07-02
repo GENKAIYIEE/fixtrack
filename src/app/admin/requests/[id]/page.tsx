@@ -87,10 +87,11 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
       firstName: request.submitter?.firstName ?? 'Unknown',
       lastName:  request.submitter?.lastName  ?? '',
     },
-    issueType:    request.issueType    as any,
-    urgencyLevel: request.urgencyLevel as any,
-    building:     request.building     as any,
-    roomNumber:   request.roomNumber,
+    issueType:     request.issueType     as any,
+    urgencyLevel:  request.urgencyLevel  as any,
+    building:      request.building      as any,
+    roomNumber:    request.roomNumber,
+    priorityLevel: request.priorityLevel,
   };
 
   return (
@@ -117,10 +118,38 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
 
       {/* ── Main Layout ── */}
       <div className="w-full flex flex-col gap-6">
-        <RequestStatusStepper
-          status={request.status as RequestStatus}
-          hasRepairNote={!!request.repairNote}
-        />
+        {request.status === 'REJECTED' || request.status === 'CANCELLED' ? (
+          <div className={`w-full p-6 rounded-xl border flex flex-col items-center justify-center text-center ${
+            request.status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+              request.status === 'REJECTED' ? 'bg-red-100' : 'bg-slate-200'
+            }`}>
+              <span className={`material-symbols-outlined text-3xl ${
+                request.status === 'REJECTED' ? 'text-red-500' : 'text-slate-500'
+              }`}>
+                {request.status === 'REJECTED' ? 'cancel' : 'block'}
+              </span>
+            </div>
+            <h3 className={`font-bold text-xl mb-1 ${
+              request.status === 'REJECTED' ? 'text-red-700' : 'text-slate-700'
+            }`}>
+              {request.status === 'REJECTED' ? 'Request Rejected' : 'Request Cancelled'}
+            </h3>
+            <p className={`text-sm ${
+              request.status === 'REJECTED' ? 'text-red-600/80' : 'text-slate-500'
+            }`}>
+              {request.status === 'REJECTED' 
+                ? (request.rejectionReason ? `Reason: ${request.rejectionReason}` : 'This request has been rejected and will not be processed further.') 
+                : (request.cancellationReason ? `Reason: ${request.cancellationReason}` : 'This request has been cancelled.')}
+            </p>
+          </div>
+        ) : (
+          <RequestStatusStepper
+            status={request.status as RequestStatus}
+            hasRepairNote={!!request.repairNote}
+          />
+        )}
         {/* RequestInfoCard owns Approve + Reject for PENDING status.
             onReject opens the RejectRequestModal via parent state. */}
         <RequestInfoCard

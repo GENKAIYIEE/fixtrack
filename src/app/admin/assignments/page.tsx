@@ -33,17 +33,17 @@ function AssignmentsContent() {
   const [fetchErrors, setFetchErrors] = useState<FetchError>({});
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(requestIdParam);
-  const [prevRequestIdParam, setPrevRequestIdParam] = useState<string | null>(requestIdParam);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // Sync URL param changes without re-render loops
-  if (requestIdParam !== prevRequestIdParam) {
-    setPrevRequestIdParam(requestIdParam);
-    setSelectedRequestId(requestIdParam);
-  }
+  // Sync URL param changes using standard React hook
+  useEffect(() => {
+    if (requestIdParam) {
+      setSelectedRequestId(requestIdParam);
+    }
+  }, [requestIdParam]);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -88,14 +88,21 @@ function AssignmentsContent() {
     }
   }, []);
 
-  const refreshAll = useCallback(async () => {
-    setLoading(true);
+  const refreshAll = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     await Promise.all([fetchRequests(), fetchTechnicians()]);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [fetchRequests, fetchTechnicians]);
 
   useEffect(() => {
     refreshAll();
+    
+    // Near Real-Time Background Polling
+    const timer = setInterval(() => {
+      refreshAll(true);
+    }, 15000);
+    
+    return () => clearInterval(timer);
   }, [refreshAll]);
 
   // ── Event handlers ───────────────────────────────────────────────────────────
@@ -176,7 +183,7 @@ function AssignmentsContent() {
 
         {/* Refresh button */}
         <button
-          onClick={refreshAll}
+          onClick={() => refreshAll(false)}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-50"
           title="Refresh both panels"
@@ -202,7 +209,7 @@ function AssignmentsContent() {
             )}
           </div>
           <button
-            onClick={refreshAll}
+            onClick={() => refreshAll(false)}
             className="text-xs font-bold underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
             Retry
@@ -264,14 +271,7 @@ function AssignmentsContent() {
 
 export default function AssignmentsPage() {
   return (
-    <Suspense fallback={
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-3 text-on-surface-variant">
-          <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
-          <p className="text-sm font-medium">Loading Assignment Board...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={null}>
       <AssignmentsContent />
     </Suspense>
   );

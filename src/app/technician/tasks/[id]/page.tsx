@@ -25,9 +25,9 @@ export default function TechnicianTaskDetailPage() {
   };
 
   // FIXED: BUG #7 — Wrapped fetchTask in useCallback to satisfy exhaustive-deps
-  const fetchTask = useCallback(async () => {
+  const fetchTask = useCallback(async (isSilentPoll = false) => {
     if (!id) return;
-    setIsLoading(true);
+    if (!isSilentPoll) setIsLoading(true);
     try {
       const res = await fetch(`/api/technician/tasks/${id}`);
       if (!res.ok) throw new Error('Failed to fetch task');
@@ -36,14 +36,19 @@ export default function TechnicianTaskDetailPage() {
       router.refresh();
     } catch (error) {
       console.error(error);
+      if (!isSilentPoll) showToast('A network error occurred while fetching the task.', 'error');
     } finally {
-      setIsLoading(false);
+      if (!isSilentPoll) setIsLoading(false);
     }
-  }, [id]);
+  }, [id, router]);
 
   // FIXED: BUG #7 — fetchTask is now stable and safe in deps
   useEffect(() => {
     fetchTask();
+    const interval = setInterval(() => {
+      fetchTask(true);
+    }, 30000);
+    return () => clearInterval(interval);
   }, [fetchTask]);
 
   const handleSaveUpdate = async (data: { repairNotes: string; partsReplaced: string; status: string }) => {
@@ -151,8 +156,8 @@ export default function TechnicianTaskDetailPage() {
             </button>
             <h1 className="font-h2 text-h2 text-on-surface font-bold flex items-center gap-3">
               Task Detail — {task.requestCode}
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadge(task.urgencyLevel)}`}>
-                {task.urgencyLevel}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadge(task.priorityLevel || 'NORMAL')}`}>
+                {task.priorityLevel || 'NORMAL'}
               </span>
             </h1>
           </div>

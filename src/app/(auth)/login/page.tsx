@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
-import { useEffect } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +25,19 @@ export default function LoginPage() {
   }, []);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
+  const buildingParam = searchParams.get('building');
+  const roomParam = searchParams.get('room');
+
+  const buildRedirectUrl = (base: string) => {
+    if (!redirectTo) return base;
+    const params = new URLSearchParams();
+    if (buildingParam) params.set('building', buildingParam);
+    if (roomParam) params.set('room', roomParam);
+    const query = params.toString();
+    return redirectTo + (query ? (redirectTo.includes('?') ? '&' : '?') + query : '');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +63,13 @@ export default function LoginPage() {
   const session = await getSession();
   const role = session?.user?.role;
 
-  if (role === 'ADMIN') {
+  if (redirectTo && redirectTo.startsWith('/')) {
+    router.replace(buildRedirectUrl(redirectTo));
+  } else if (role === 'ADMIN') {
     router.replace('/admin/dashboard');
   } else if (role === 'TECHNICIAN') {
     router.replace('/technician/dashboard');
-  } else if (role === 'USER') {
+  } else if (role === 'STUDENT') {
     router.replace('/dashboard');
   } else if (role) {
     router.replace('/dashboard');
@@ -140,6 +154,13 @@ export default function LoginPage() {
             <h2 className="font-h1 text-h1 text-on-surface mb-2">Welcome Back</h2>
             <p className="font-body text-body text-on-surface-variant">Sign in to your FixTrack account</p>
           </div>
+          
+          {redirectTo === '/requests/new' && (
+            <div className="mb-4 bg-secondary-fixed text-on-secondary-fixed px-4 py-3 rounded-lg flex items-center gap-3 font-body-sm text-body-sm">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>qr_code</span>
+              Scan detected. Please log in to submit your maintenance report.
+            </div>
+          )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
@@ -242,5 +263,17 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="flex min-h-screen items-center justify-center bg-surface-container-lowest">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </main>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

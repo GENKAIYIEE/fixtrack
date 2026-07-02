@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import path from 'path';
-import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import { IssueType, UrgencyLevel, Building, NotifType } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -14,13 +13,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'USER') {
+    // Check for valid requester role
+    if (session.user.role !== 'STUDENT') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = session.user.id;
+    
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
 
-    const requests = await prisma.maintenanceRequest.findMany({
+    const [requests, total] = await Promise.all([
+      prisma.maintenanceRequest.findMany({
       where: { submittedById: userId },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -37,14 +43,28 @@ export async function GET(request: Request) {
         createdAt: true,
         updatedAt: true,
       },
-    });
+      skip,
+      take: limit,
+    }),
+    prisma.maintenanceRequest.count({
+      where: { submittedById: userId }
+    })
+  ]);
 
     const mappedRequests = requests.map(req => ({
       ...req,
       title: req.description ? (req.description.length > 50 ? req.description.substring(0, 50) + '...' : req.description) : 'No description provided'
     }));
 
-    return NextResponse.json({ requests: mappedRequests });
+    return NextResponse.json({ 
+      requests: mappedRequests,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('[api/user/requests] Error:', error);
     return NextResponse.json(
@@ -59,152 +79,107 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'USER') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check for valid requester role
+    if (session.user.role !== 'STUDENT') {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const formData = await request.formData();
-    const title = formData.get('title') as string;
-    const category = formData.get('category') as string;
-    const description = formData.get('description') as string;
-    const images = (formData.getAll('images') as File[]).filter(
-      (f) => f instanceof File && f.size > 0
-    );
+    const body = await request.json();
+    const { issueType, building, roomNumber, locationNotes, title, description, photos } = body;
 
-    // Validate
-    if (!title || !title.trim()) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
-    }
-    if (!category) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
-    }
-    if (!description || !description.trim()) {
-      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
-    }
-    if (images.length > 3) {
-      return NextResponse.json({ error: 'Maximum 3 images allowed' }, { status: 400 });
-    }
-
-    // Process images - save first image only (due to schema limitation)
-    let photoUrl: string | undefined;
-    if (images.length > 0) {
-      const image = images[0];
-      const bytes = await image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-
-      // Generate unique filename
-      const fileExtension = image.name.split('.').pop();
-      const filename = `${uuidv4()}.${fileExtension}`;
-      const filePath = path.join(uploadsDir, filename);
-
-      // Save file
-      fs.writeFileSync(filePath, buffer);
-
-      // Construct URL
-      photoUrl = `/uploads/${filename}`;
-    }
-
-    // Map category value to IssueType enum
-    const categoryMap: Record<string, string> = {
-      plumbing: 'PLUMBING',
-      electrical: 'ELECTRICAL',
-      hvac: 'HVAC',
-      carpentry: 'CARPENTRY',
-      structural: 'STRUCTURAL',
-      other: 'OTHERS',
-      others: 'OTHERS',
-    };
-    const parsedIssueType = categoryMap[category.toLowerCase()] ?? 'OTHERS';
-
-    // Generate a collision-safe requestCode using UUID
-    const generateRequestCode = () => `REQ-${uuidv4().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-
-    // Retry up to 3 times in the unlikely event of a code collision
-    let newRequest;
-    let attempts = 0;
-    while (attempts < 3) {
-      try {
-        newRequest = await prisma.maintenanceRequest.create({
-          data: {
-            issueType: parsedIssueType as any,
-            description: `${title.trim()}\n\n${description.trim()}`,
-            photoUrl,
-            submittedById: session.user.id,
-            status: 'PENDING',
-            priorityLevel: 'NORMAL',
-            urgencyLevel: 'NORMAL',
-            requestCode: generateRequestCode(),
-            building: 'OTHERS',
-            roomNumber: 'TBD',
-          },
-        });
-        break; // success
-      } catch (createErr: any) {
-        // P2002 = unique constraint violation (duplicate requestCode)
-        if (createErr?.code === 'P2002' && attempts < 2) {
-          attempts++;
-          continue;
-        }
-        throw createErr; // rethrow non-collision errors or exhausted retries
+    // Server-side validation
+    const required = { issueType, building, roomNumber, title, description };
+    for (const [key, val] of Object.entries(required)) {
+      if (!val?.toString().trim()) {
+        return Response.json({ error: `${key} is required` }, { status: 400 });
       }
     }
-
-    if (!newRequest) {
-      throw new Error('Failed to create request after multiple attempts.');
+    if (description.trim().length < 20) {
+      return Response.json({ error: 'Description too short' }, { status: 400 });
     }
 
-    // Create notification for user
-    try {
-      await prisma.notification.create({
+    // Generate unique collision-resistant requestCode
+    const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const datePrefix = new Date().toISOString().slice(2, 7).replace('-', ''); // YYMM
+    const requestCode = `REQ-${datePrefix}-${randomHex}`;
+
+    // Handle photos — store as JSON array string
+    const photoUrl = photos && photos.length > 0
+      ? JSON.stringify(photos.slice(0, 3))
+      : null;
+
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN', accountStatus: 'ACTIVE' },
+      select: { id: true }
+    });
+
+    const newRequest = await prisma.$transaction(async (tx) => {
+      // Step 1: Create the MaintenanceRequest
+      const req = await tx.maintenanceRequest.create({
         data: {
-          userId: session.user.id,
-          type: 'REQUEST_SUBMITTED',
-          title: 'Request Submitted',
-          message: `Your request "${title.trim()}" has been submitted and is pending review.`,
-          requestId: newRequest.id,
-        },
+          requestCode,
+          submittedById: session.user.id,
+          issueType: issueType as IssueType,
+          urgencyLevel: 'NORMAL',
+          building: building as Building,
+          roomNumber: roomNumber.trim(),
+          locationNotes: locationNotes?.trim() || null,
+          description: `${title.trim()}\n\n${description.trim()}`,
+          status: 'PENDING',
+          priorityLevel: 'NORMAL',
+          photoUrl
+        }
       });
-    } catch (notifErr) {
-      // Non-critical — log but don't fail the request
-      console.warn('[api/user/requests] Failed to create notification:', notifErr);
-    }
 
-    // Also create an audit log entry for the submission
-    try {
-      await prisma.auditLog.create({
+      // Step 2: RequestStatusHistory
+      await tx.requestStatusHistory.create({
+        data: {
+          requestId: req.id,
+          changedById: session.user.id,
+          previousStatus: null,
+          newStatus: 'PENDING',
+          remarks: 'Request submitted by student'
+        }
+      });
+
+      // Step 3: Notify all active admins
+      if (admins.length > 0) {
+        await tx.notification.createMany({
+          data: admins.map(admin => ({
+            userId: admin.id,
+            type: 'REQUEST_SUBMITTED' as NotifType,
+            title: 'New Maintenance Request',
+            message: `${session.user.firstName || 'Student'} ${session.user.lastName || ''} submitted: "${title.trim()}" at ${building.replace(/_/g, ' ')}, ${roomNumber} (${requestCode})`,
+            requestId: req.id
+          }))
+        });
+      }
+
+      // Step 4: AuditLog
+      await tx.auditLog.create({
         data: {
           userId: session.user.id,
           action: 'REQUEST_SUBMITTED',
-          affectedRecordId: newRequest.requestCode,
+          affectedRecordId: req.id,
           affectedRecordType: 'MaintenanceRequest',
-          details: `Request ${newRequest.requestCode} submitted by user ${session.user.id}`,
-        },
+          details: `Student submitted ${requestCode}: ${issueType} issue at ${building}, ${roomNumber}`
+        }
       });
-    } catch (auditErr) {
-      // Non-critical — log but don't fail the request
-      console.warn('[api/user/requests] Failed to create audit log:', auditErr);
-    }
 
-    return NextResponse.json({ success: true, request: newRequest }, { status: 201 });
+      return req;
+    });
+
+    return Response.json({
+      success: true,
+      requestCode,
+      requestId: newRequest.id
+    }, { status: 201 });
+    
   } catch (error: any) {
-    console.error('[api/user/requests] Error:', error);
-    // Return a meaningful error message to help debug
-    const message =
-      error?.message?.includes('Unique constraint') || error?.code === 'P2002'
-        ? 'A request with this code already exists. Please try again.'
-        : 'Internal Server Error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    console.error('[api/user/requests] POST Error:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
