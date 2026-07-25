@@ -21,6 +21,7 @@ interface UserFormProps {
   initialData?: Partial<UserFormData>;
   onSubmit: (data: UserFormData) => Promise<void>;
   isSubmitting: boolean;
+  onCancel: () => void;
 }
 
 const defaultForm: UserFormData = {
@@ -52,8 +53,7 @@ function generateSecurePassword(): string {
   return pwd.split('').sort(() => Math.random() - 0.5).join('');
 }
 
-export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: UserFormProps) {
-  const router = useRouter();
+export default function UserForm({ mode, initialData, onSubmit, isSubmitting, onCancel }: UserFormProps) {
   const [form, setForm] = useState<UserFormData>({ ...defaultForm, ...initialData });
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormData, string>>>({});
   const [showSpecialization, setShowSpecialization] = useState(false);
@@ -108,8 +108,6 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Enter a valid email address.';
     }
-    if (!form.idNumber.trim()) newErrors.idNumber = 'ID number is required.';
-    if (!form.department.trim()) newErrors.department = 'Department is required.';
     if (!form.role) newErrors.role = 'Role is required.';
     if (showSpecialization && !form.specialization) {
       newErrors.specialization = 'Specialization is required for Technicians.';
@@ -141,22 +139,9 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
 
   const labelClass = 'block font-label-md text-label-md text-on-surface mb-1.5';
   const errorClass = 'text-error text-xs mt-1';
-
   return (
-    <form onSubmit={handleSubmit} noValidate>
-      {/* Form Card Header */}
-      <div className="px-8 py-6 border-b border-outline-variant/30">
-        <h2 className="font-h2 text-h2 text-on-surface">
-          {mode === 'create' ? 'New User Details' : 'Edit User Details'}
-        </h2>
-        <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-          {mode === 'create'
-            ? 'Fill in the information below to create a new account.'
-            : 'Update the user information below.'}
-        </p>
-      </div>
-
-      <div className="px-8 py-6 flex flex-col gap-6">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
         {/* Personal Information */}
         <div>
           <p className="font-label-md text-label-md text-on-surface uppercase tracking-wider mb-4">
@@ -217,39 +202,7 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
               {errors.email && <p className={errorClass}>{errors.email}</p>}
             </div>
 
-            {/* ID Number */}
-            <div>
-              <label htmlFor="idNumber" className={labelClass}>
-                ID Number <span className="text-error">*</span>
-              </label>
-              <input
-                id="idNumber"
-                name="idNumber"
-                type="text"
-                value={form.idNumber}
-                onChange={handleChange}
-                placeholder="e.g. 2024-00123"
-                className={getInputClass('idNumber')}
-              />
-              {errors.idNumber && <p className={errorClass}>{errors.idNumber}</p>}
-            </div>
 
-            {/* Department */}
-            <div>
-              <label htmlFor="department" className={labelClass}>
-                Department <span className="text-error">*</span>
-              </label>
-              <input
-                id="department"
-                name="department"
-                type="text"
-                value={form.department}
-                onChange={handleChange}
-                placeholder="e.g. College of Engineering"
-                className={getInputClass('department')}
-              />
-              {errors.department && <p className={errorClass}>{errors.department}</p>}
-            </div>
 
             {/* Contact Number */}
             <div>
@@ -283,7 +236,6 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
                 >
                   <option value="" disabled>Select a role...</option>
                   <option value="ADMIN">Administrator</option>
-                  <option value="STUDENT">Student</option>
                   <option value="TECHNICIAN">Technician</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-lg">
@@ -335,8 +287,7 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
           <p className="font-label-md text-label-md text-on-surface uppercase tracking-wider mb-4">
             Security &amp; Access
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div className="flex flex-col gap-6">
             {/* Temporary Password — create mode only */}
             {mode === 'create' && (
               <div>
@@ -349,8 +300,8 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
                     name="password"
                     type="text"
                     value={form.password}
-                    readOnly
-                    className="flex-1 px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg font-mono text-sm text-on-surface focus:outline-none"
+                    onChange={handleChange}
+                    className="flex-1 px-4 py-2.5 bg-surface border border-outline-variant rounded-lg font-mono text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
                   />
                   <button
                     type="button"
@@ -370,15 +321,15 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
             )}
 
             {/* Account Status Toggle */}
-            <div className={mode === 'create' ? '' : 'md:col-span-2'}>
-              <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant">
-                <div>
+            <div>
+              <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant gap-4">
+                <div className="flex-1">
                   <p className="font-label-md text-label-md text-on-surface">Account Status</p>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
                     Active users can access the portal.
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
                   <input
                     type="checkbox"
                     className="sr-only peer"
@@ -402,54 +353,42 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting }: 
             </div>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-4 mt-2 pt-6 border-t border-surface-variant">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            disabled={isSubmitting}
-            className="bg-surface border border-outline-variant text-on-surface hover:bg-surface-variant rounded-lg px-6 py-2.5 font-label-md text-label-md transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-primary text-white hover:bg-[#001a54] hover:shadow-lg active:scale-[0.98] rounded-lg px-8 py-3 shadow-md flex items-center gap-2 font-label-md text-label-md transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-base">save</span>
-                {mode === 'create' ? 'Save User' : 'Save Changes'}
-              </>
-            )}
-          </button>
-        </div>
+      </div>
+      {/* Action Buttons Sticky Footer */}
+      <div className="flex justify-end gap-4 px-6 py-4 border-t border-outline-variant/30 bg-surface">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="bg-surface border border-outline-variant text-on-surface hover:bg-surface-variant rounded-lg px-6 py-2.5 font-label-md text-label-md transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-primary text-white hover:bg-[#001a54] hover:shadow-lg active:scale-[0.98] rounded-lg px-8 py-3 shadow-md flex items-center gap-2 font-label-md text-label-md transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <>
+              <svg
+                className="animate-spin h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Saving...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-base">save</span>
+              {mode === 'create' ? 'Save User' : 'Save Changes'}
+            </>
+          )}
+        </button>
       </div>
     </form>
   );

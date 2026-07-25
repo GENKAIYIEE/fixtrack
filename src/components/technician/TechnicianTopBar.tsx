@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import NotificationDropdown from '@/components/user/NotificationDropdown';
 
 type TechnicianTopBarProps = {
   firstName: string;
@@ -10,49 +11,14 @@ type TechnicianTopBarProps = {
 
 export default function TechnicianTopBar({ firstName, lastName }: TechnicianTopBarProps) {
   const router = useRouter();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const res = await fetch('/api/notifications?countOnly=true');
-        if (res.ok) {
-          const data = await res.json();
-          setUnreadCount(data.unreadCount);
-        }
-      } catch (error) {
-        console.error('Error fetching unread count:', error);
-      }
-    };
-
-    // FIXED: MINOR #3 — Added polling to keep notification count fresh (every 30s)
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval); // cleanup on unmount
-  }, []);
 
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-between items-center px-8 h-16">
-      {/* Left */}
-      <div className="flex items-center gap-4">
-        <span className="font-semibold text-slate-900 tracking-tight">FixTrack Monitoring</span>
-      </div>
-
+    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-end items-center px-8 h-16">
       {/* Right */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => router.push('/technician/notifications')}
-            className="relative hover:bg-slate-50 rounded-full p-2 transition-all text-slate-500"
-          >
-            <span className="material-symbols-outlined">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-error text-on-error text-[10px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
+          <NotificationDropdown viewAllPath="/technician/notifications" />
 
         </div>
 

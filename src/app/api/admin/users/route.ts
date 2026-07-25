@@ -109,8 +109,11 @@ export async function POST(request: NextRequest) {
   } = body;
 
   // Server-side required field validation
-  if (!firstName || !lastName || !email || !idNumber || !department || !role || !password) {
+  if (!firstName || !lastName || !email || !role || !password) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+  if (role === 'STUDENT') {
+    return NextResponse.json({ error: 'Admin cannot manually create student accounts.' }, { status: 403 });
   }
   if (role === 'TECHNICIAN' && !specialization) {
     return NextResponse.json({ error: 'Specialization is required for Technicians' }, { status: 400 });
@@ -126,8 +129,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A user with this email already exists.' }, { status: 409 });
     }
 
+    // Generate ID number if not provided (e.g. for Admins/Technicians without explicit IDs)
+    const finalIdNumber = idNumber || `${role.substring(0,3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
     // Check idNumber uniqueness
-    const idExists = await prisma.user.findUnique({ where: { idNumber } });
+    const idExists = await prisma.user.findUnique({ where: { idNumber: finalIdNumber } });
     if (idExists) {
       return NextResponse.json({ error: 'A user with this ID number already exists.' }, { status: 409 });
     }
@@ -141,8 +147,8 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName,
         email,
-        idNumber,
-        department,
+        idNumber: finalIdNumber,
+        department: department || null,
         contactNumber: contactNumber || null,
         role,
         specialization: role === 'TECHNICIAN' ? specialization : null,

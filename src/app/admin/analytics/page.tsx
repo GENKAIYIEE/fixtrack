@@ -64,10 +64,6 @@ export default function AnalyticsPage() {
     };
   }, [timeRange]);
 
-  const handleExportPDF = () => {
-    window.print();
-  };
-
   const handleExportExcel = () => {
     if (!analyticsData) return;
 
@@ -118,36 +114,8 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto w-full">
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          @page { size: portrait; margin: 15mm; }
-        }
-      `}} />
-
-      {/* Clean Corporate Print Header */}
-      <div className="hidden print:block mb-8 font-sans">
-        <div className="flex justify-between text-[10px] text-slate-500 mb-2 font-semibold">
-          <span>FixTrack Maintenance System</span>
-          <span>Analytics Report | Confidential</span>
-        </div>
-        
-        <div className="border-t-[3px] border-[#6495ED] pt-6 pb-6 text-center border-b border-slate-400 mb-6">
-          <h1 className="text-3xl font-black tracking-wide text-[#1E3A8A] mb-1">
-            ANALYTICS & OPERATIONS REPORT
-          </h1>
-          <p className="text-sm text-slate-500 tracking-wider">
-            FixTrack Maintenance Management System
-          </p>
-          <div className="mt-3 text-xs text-slate-600 flex justify-center gap-4">
-            <span>Generated: {new Date().toLocaleDateString()}</span>
-            <span>•</span>
-            <span>Period: {timeRange.toUpperCase()}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Page Header (Hidden on Print) */}
-      <div className="flex justify-between items-start mb-8 print:hidden">
+      {/* Page Header */}
+      <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="font-h1 text-primary-container mb-2">Reports & Analytics</h1>
           <p className="text-on-surface-variant font-body-lg max-w-2xl">
@@ -156,7 +124,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Action Row */}
-        <div className="flex flex-col items-end gap-4 no-print">
+        <div className="flex flex-col items-end gap-4">
           {/* Time Range Toggle */}
           <div className="flex bg-surface-variant/30 rounded-lg p-1">
             {(['week', 'month', 'year'] as const).map(range => (
@@ -176,13 +144,6 @@ export default function AnalyticsPage() {
 
           {/* Export Buttons */}
           <div className="flex gap-3">
-            <button 
-              onClick={handleExportPDF}
-              className="flex items-center gap-2 bg-surface hover:bg-surface-variant border border-outline-variant/50 text-on-surface rounded-lg px-4 py-2 transition-colors font-label-md shadow-sm"
-            >
-              <span className="material-symbols-outlined text-red-500">picture_as_pdf</span>
-              Export PDF
-            </button>
             <button 
               onClick={handleExportExcel}
               className="flex items-center gap-2 bg-surface hover:bg-surface-variant border border-outline-variant/50 text-on-surface rounded-lg px-4 py-2 transition-colors font-label-md shadow-sm"
@@ -207,8 +168,8 @@ export default function AnalyticsPage() {
         <>
           <AnalyticsKpiRow kpis={analyticsData.kpis} />
 
-          {/* Visual Charts & Data (Hidden on Print) */}
-          <div className="print:hidden">
+          {/* Visual Charts & Data */}
+          <div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
               <div className="lg:col-span-8">
                 <DailyVolumeLineChart data={analyticsData.dailyVolume} />
@@ -223,60 +184,8 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Text-Only Data Summary (Only on Print) */}
-          <div className="hidden print:block font-sans mb-8">
-            <div className="bg-[#1E3A8A] text-white font-bold text-sm px-3 py-1 mb-2 uppercase tracking-wide">
-              SECTION 2 - STATUS BREAKDOWN
-            </div>
-            <table className="w-full border-collapse text-sm border border-slate-300 mb-6">
-              <tbody>
-                <tr>
-                  <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Completed</td>
-                  <td className="border border-slate-300 p-2 w-1/4">{analyticsData.statusBreakdown.completed}</td>
-                  <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Ongoing</td>
-                  <td className="border border-slate-300 p-2 w-1/4">{analyticsData.statusBreakdown.ongoing}</td>
-                </tr>
-                <tr>
-                  <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Pending</td>
-                  <td className="border border-slate-300 p-2 w-1/4">{analyticsData.statusBreakdown.pending}</td>
-                  <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Resolution Rate</td>
-                  <td className="border border-slate-300 p-2 w-1/4 font-bold">{analyticsData.statusBreakdown.resolvedPercentage}%</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="bg-[#1E3A8A] text-white font-bold text-sm px-3 py-1 mb-2 uppercase tracking-wide">
-              SECTION 3 - BUILDING VOLUME SUMMARY
-            </div>
-            <table className="w-full border-collapse text-sm border border-slate-300">
-              <thead>
-                <tr>
-                  <th className="border border-slate-300 bg-slate-50 p-2 text-left font-semibold">Building / Location</th>
-                  <th className="border border-slate-300 bg-slate-50 p-2 text-center font-semibold w-1/4">Total Requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analyticsData.buildingVolume.length > 0 ? (
-                  analyticsData.buildingVolume.map((b, idx) => (
-                    <tr key={idx}>
-                      <td className="border border-slate-300 p-2 capitalize">{b.building.replace(/_/g, ' ').toLowerCase()}</td>
-                      <td className="border border-slate-300 p-2 text-center">{b.count}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={2} className="border border-slate-300 p-2 text-center italic text-slate-500">No building data available</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </>
       )}
-
-      {/* Clean Corporate Print Footer */}
-      <div className="hidden print:flex justify-between items-end mt-12 pt-4 border-t border-slate-300 font-sans text-[10px] text-slate-500">
-        <div>© {new Date().getFullYear()} FixTrack Maintenance System | fixtrack.admin.com</div>
-        <div>Page 1</div>
-      </div>
 
       {toast && (
         <Toast

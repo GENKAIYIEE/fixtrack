@@ -67,16 +67,16 @@ function renderStatusBadges(details: string | null) {
 }
 
 export default function AuditLogsTable({ logs, isLoading }: AuditLogsTableProps) {
-  if (isLoading) {
-    return (
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] overflow-hidden">
-        <table className="w-full text-left text-body text-on-surface">
+    if (isLoading) {
+      return (
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left text-body text-on-surface table-fixed min-w-[800px]">
           <thead className="bg-primary text-on-primary border-b border-outline-variant font-label-md text-label-md">
             <tr>
-              <th className="px-6 py-4">Timestamp</th>
-              <th className="px-6 py-4">User</th>
-              <th className="px-6 py-4">Action</th>
-              <th className="px-6 py-4">Record</th>
+              <th className="px-6 py-4 w-40">Timestamp</th>
+              <th className="px-6 py-4 w-48">User</th>
+              <th className="px-6 py-4 w-40">Action</th>
+              <th className="px-6 py-4 w-32">Record</th>
               <th className="px-6 py-4">Details</th>
             </tr>
           </thead>
@@ -97,16 +97,15 @@ export default function AuditLogsTable({ logs, isLoading }: AuditLogsTableProps)
   }
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-body text-on-surface">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full text-left text-body text-on-surface table-fixed min-w-[800px]">
           <thead className="bg-primary text-on-primary border-b border-outline-variant font-label-md text-label-md">
             <tr>
-              <th className="px-6 py-4 whitespace-nowrap">Timestamp</th>
-              <th className="px-6 py-4 whitespace-nowrap">User</th>
-              <th className="px-6 py-4 whitespace-nowrap">Action</th>
-              <th className="px-6 py-4 whitespace-nowrap">Record</th>
-              <th className="px-6 py-4 whitespace-nowrap">Details</th>
+              <th className="px-6 py-4 w-40">Timestamp</th>
+              <th className="px-6 py-4 w-48">User</th>
+              <th className="px-6 py-4 w-40">Action</th>
+              <th className="px-6 py-4 w-32">Record</th>
+              <th className="px-6 py-4">Details</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/30">
@@ -152,31 +151,31 @@ export default function AuditLogsTable({ logs, isLoading }: AuditLogsTableProps)
                 }
 
                 return (
-                  <tr key={log.id} className={`${rowBg} hover:bg-primary-fixed hover:text-on-primary-fixed transition-colors ${borderLeftClass}`}>
-                    <td className="px-6 py-4 text-on-surface-variant font-medium whitespace-nowrap text-sm">
+                  <tr key={log.id} className={`${rowBg} hover:bg-surface-variant/30 transition-colors ${borderLeftClass}`}>
+                    <td className="px-6 py-4 text-on-surface-variant font-medium truncate text-sm" title={format(new Date(log.createdAt), 'MMM dd, hh:mm a')}>
                       {format(new Date(log.createdAt), 'MMM dd, hh:mm a')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-label-md text-label-md ${userPillClass}`}>
-                        <span className={`material-symbols-outlined text-[16px] ${(!log.user || !log.userId || !['ADMIN', 'TECHNICIAN'].includes(log.user.role)) ? 'text-outline' : ''}`}>
+                    <td className="px-6 py-4 truncate">
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-label-md text-label-md max-w-full ${userPillClass}`} title={userName}>
+                        <span className={`material-symbols-outlined text-[16px] shrink-0 ${(!log.user || !log.userId || !['ADMIN', 'TECHNICIAN'].includes(log.user.role)) ? 'text-outline' : ''}`}>
                           {userIcon}
                         </span>
-                        {userName}
+                        <span className="truncate">{userName}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-sm">
+                    <td className="px-6 py-4 truncate font-medium text-sm" title={actionData.label}>
                       <span className={actionData.className}>{actionData.label}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 truncate">
                       {log.affectedRecordId ? (
-                        <span className="font-mono bg-surface-container px-2 py-0.5 rounded text-xs border border-surface-dim">
+                        <span className="font-mono bg-surface-container px-2 py-0.5 rounded text-xs border border-surface-dim truncate inline-block max-w-full" title={log.affectedRecordId}>
                           {log.affectedRecordId}
                         </span>
                       ) : (
                         <span className="text-on-surface-variant">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-on-surface-variant text-sm max-w-xs truncate" title={log.details || ''}>
+                    <td className="px-6 py-4 text-on-surface-variant text-sm break-words whitespace-pre-wrap">
                       {renderStatusBadges(log.details)}
                     </td>
                   </tr>
@@ -186,6 +185,5 @@ export default function AuditLogsTable({ logs, isLoading }: AuditLogsTableProps)
           </tbody>
         </table>
       </div>
-    </div>
   );
 }

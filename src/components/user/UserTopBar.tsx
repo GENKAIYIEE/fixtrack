@@ -25,7 +25,6 @@ export default function UserTopBar({ user, onMenuClick }: { user: UserProps, onM
         <span className="font-semibold text-slate-900 tracking-tight hidden sm:block">FixTrack Monitoring</span>
         <span className="font-semibold text-slate-900 tracking-tight sm:hidden">FixTrack</span>
       </div>
-
       {/* Right */}
       <div className="flex items-center gap-4">
         {/* Notifications dropdown */}

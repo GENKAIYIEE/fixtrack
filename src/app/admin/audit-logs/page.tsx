@@ -111,7 +111,7 @@ export default function AuditLogsPage() {
   const paginationShape = { total, page, limit: LIMIT, totalPages };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -134,7 +134,7 @@ export default function AuditLogsPage() {
         onReset={handleReset}
       />
 
-      <div className="flex flex-col gap-0">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
         <AuditLogsTable
           logs={logs}
           isLoading={isLoading}

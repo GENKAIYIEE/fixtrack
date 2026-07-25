@@ -126,6 +126,7 @@ export default function EditUserPage() {
               initialData={initialData}
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
+              onCancel={() => router.back()}
             />
           ) : null}
         </div>
