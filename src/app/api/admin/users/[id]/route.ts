@@ -204,7 +204,7 @@ export async function PUT(
   } = body;
 
   // Server-side validation
-  if (!firstName || !lastName || !email || !idNumber || !department || !role) {
+  if (!firstName || !lastName || !email || !role) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
   if (role === 'TECHNICIAN' && !specialization) {
@@ -220,9 +220,12 @@ export async function PUT(
       return NextResponse.json({ error: 'A user with this email already exists.' }, { status: 409 });
     }
 
+    // Generate ID number if not provided
+    const finalIdNumber = idNumber || `${role.substring(0,3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
     // Check idNumber uniqueness excluding self
     const idConflict = await prisma.user.findFirst({
-      where: { idNumber, NOT: { id } },
+      where: { idNumber: finalIdNumber, NOT: { id } },
     });
     if (idConflict) {
       return NextResponse.json({ error: 'A user with this ID number already exists.' }, { status: 409 });
@@ -234,8 +237,8 @@ export async function PUT(
         firstName,
         lastName,
         email,
-        idNumber,
-        department,
+        idNumber: finalIdNumber,
+        department: department || null,
         contactNumber: contactNumber || null,
         role,
         specialization: role === 'TECHNICIAN' ? specialization : null,

@@ -65,15 +65,15 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
           View All <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="w-full">
+        <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className="bg-[#1E3A8A] text-white">
-              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider">ID</th>
+              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider w-28">ID</th>
               <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider">Description</th>
-              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider">Location</th>
-              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider text-right">Actions</th>
+              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider w-40">Location</th>
+              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider w-36">Status</th>
+              <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider text-right w-24">Actions</th>
             </tr>
           </thead>
           <tbody className="font-body-sm text-body-sm text-slate-700 divide-y divide-slate-100">
@@ -83,9 +83,11 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
 
               return (
                 <tr key={req.id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F1F5F9]'} hover:bg-[#DBEAFE] transition-colors group`}>
-                  <td className="px-6 py-4 font-semibold text-slate-900">{req.requestCode}</td>
-                  <td className="px-6 py-4">{req.description?.substring(0, 50)}{req.description && req.description.length > 50 ? '...' : ''}</td>
-                  <td className="px-6 py-4">{formatBuilding(req.building)} - Rm {req.roomNumber}</td>
+                  <td className="px-6 py-4 font-semibold text-slate-900 truncate" title={req.requestCode || ''}>{req.requestCode}</td>
+                  <td className="px-6 py-4 truncate" title={req.description || ''}>{req.description}</td>
+                  <td className="px-6 py-4 truncate" title={`${formatBuilding(req.building)} - Rm ${req.roomNumber}`}>
+                    {formatBuilding(req.building)} - Rm {req.roomNumber}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${labelClasses}`}>
                       {label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()}

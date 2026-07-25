@@ -27,15 +27,16 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
     let rangeStart = new Date();
+    rangeStart.setHours(0, 0, 0, 0);
 
     if (range === 'week') {
-      rangeStart.setDate(now.getDate() - 7);
+      rangeStart.setDate(rangeStart.getDate() - 6);
     } else if (range === 'month') {
-      rangeStart.setDate(now.getDate() - 30);
+      rangeStart.setDate(rangeStart.getDate() - 29);
     } else if (range === 'year') {
-      rangeStart.setDate(now.getDate() - 365);
+      rangeStart.setDate(rangeStart.getDate() - 364);
     } else {
-      rangeStart.setDate(now.getDate() - 30); // Default month
+      rangeStart.setDate(rangeStart.getDate() - 29); // Default month
     }
 
     // 1. Total Requests
@@ -71,13 +72,11 @@ export async function GET(request: NextRequest) {
     //   2. Empty while-iterator loop (iterated dates but never pushed to dailyVolume)
     // Only the uniqueDaysMap pass below is kept — it correctly populates dailyVolume.
 
-    // 4. Daily Volume — Scalable Database Aggregation (groups natively by PostgreSQL)
-    const volumeResult = await prisma.$queryRaw<{ date: Date; count: bigint }[]>`
-      SELECT DATE_TRUNC('day', "createdAt") as date, COUNT(id) as count
-      FROM "MaintenanceRequest"
-      WHERE "createdAt" >= ${rangeStart}
-      GROUP BY DATE_TRUNC('day', "createdAt")
-    `;
+    // 4. Daily Volume — Aggregating in memory to guarantee local timezone accuracy
+    const allRecentRequests = await prisma.maintenanceRequest.findMany({
+      where: { createdAt: { gte: rangeStart } },
+      select: { createdAt: true }
+    });
 
     const dailyVolume: { date: string; count: number }[] = [];
     const end = new Date(now);
@@ -85,27 +84,38 @@ export async function GET(request: NextRequest) {
 
     const uniqueDaysMap = new Map<string, number>();
     const iter = new Date(rangeStart);
-    iter.setHours(0, 0, 0, 0);
     while (iter <= end) {
-      const key = iter.toISOString().split('T')[0];
+      // Local time string format YYYY-MM-DD
+      const year = iter.getFullYear();
+      const month = String(iter.getMonth() + 1).padStart(2, '0');
+      const day = String(iter.getDate()).padStart(2, '0');
+      const key = `${year}-${month}-${day}`;
       uniqueDaysMap.set(key, 0);
       iter.setDate(iter.getDate() + 1);
     }
 
-    volumeResult.forEach(row => {
-      const key = row.date.toISOString().split('T')[0];
+    allRecentRequests.forEach(req => {
+      const year = req.createdAt.getFullYear();
+      const month = String(req.createdAt.getMonth() + 1).padStart(2, '0');
+      const day = String(req.createdAt.getDate()).padStart(2, '0');
+      const key = `${year}-${month}-${day}`;
+      
       if (uniqueDaysMap.has(key)) {
-        uniqueDaysMap.set(key, uniqueDaysMap.get(key)! + Number(row.count));
+        uniqueDaysMap.set(key, uniqueDaysMap.get(key)! + 1);
       }
     });
 
     uniqueDaysMap.forEach((count, dateKey) => {
-      const d = new Date(dateKey);
+      // Create date object carefully using local parts so it doesn't shift
+      const [y, m, d] = dateKey.split('-');
+      const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+      
       let dateStr;
-      if (range === 'year') {
-        dateStr = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      if (range === 'week') {
+        dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' });
       } else {
-        dateStr = d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' });
+        // For month and year, use Month and Day to avoid duplicate weekdays
+        dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
       }
       dailyVolume.push({ date: dateStr, count });
     });

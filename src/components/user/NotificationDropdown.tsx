@@ -12,7 +12,7 @@ type Notification = {
   createdAt: string;
 };
 
-export default function NotificationDropdown() {
+export default function NotificationDropdown({ viewAllPath = '/user/notifications' }: { viewAllPath?: string }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -149,7 +149,7 @@ export default function NotificationDropdown() {
             <button 
               onClick={() => {
                 setIsOpen(false);
-                router.push('/user/notifications');
+                router.push(viewAllPath);
               }}
               className="text-sm text-primary font-medium hover:text-primary-fixed-variant transition-colors"
             >

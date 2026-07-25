@@ -64,7 +64,13 @@ function SkeletonItem() {
 
 const PAGE_LIMIT = 10;
 
-export default function NotificationsInbox() {
+export default function NotificationsInbox({ 
+  requestBasePath = '/requests',
+  hideHeader = false,
+}: { 
+  requestBasePath?: string;
+  hideHeader?: boolean;
+}) {
   const router = useRouter();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -140,7 +146,7 @@ export default function NotificationsInbox() {
     }
 
     if (notif.requestId) {
-      router.push(`/requests/${notif.requestId}`);
+      router.push(`${requestBasePath}/${notif.requestId}`);
     }
   };
 
@@ -221,15 +227,17 @@ export default function NotificationsInbox() {
     <div className="max-w-3xl mx-auto space-y-4">
 
       {/* ── Page header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-[22px] font-semibold text-on-surface">Inbox</h1>
-          {unreadCount > 0 && (
-            <span className="bg-error text-on-error text-xs font-bold px-2 py-0.5 rounded-full leading-none">
-              {unreadCount} unread
-            </span>
-          )}
-        </div>
+      <div className={`flex items-center ${hideHeader ? 'justify-end' : 'justify-between'}`}>
+        {!hideHeader && (
+          <div className="flex items-center gap-3">
+            <h1 className="text-[22px] font-semibold text-on-surface">Inbox</h1>
+            {unreadCount > 0 && (
+              <span className="bg-error text-on-error text-xs font-bold px-2 py-0.5 rounded-full leading-none">
+                {unreadCount} unread
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <button

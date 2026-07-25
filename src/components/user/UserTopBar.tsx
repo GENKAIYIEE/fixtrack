@@ -13,12 +13,7 @@ export default function UserTopBar({ user }: { user: UserProps }) {
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'ST';
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-between items-center px-8 h-16">
-      {/* Left */}
-      <div className="flex items-center gap-4">
-        <span className="font-semibold text-slate-900 tracking-tight">FixTrack Monitoring</span>
-      </div>
-
+    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-end items-center px-8 h-16">
       {/* Right */}
       <div className="flex items-center gap-4">
         {/* Notifications dropdown */}

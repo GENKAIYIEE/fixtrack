@@ -8,12 +8,15 @@ import UsersTable, { UserRow } from '@/components/admin/UsersTable';
 import UsersPagination from '@/components/admin/UsersPagination';
 import DeactivateUserModal from '@/components/admin/DeactivateUserModal';
 import ResetPasswordModal from '@/components/admin/ResetPasswordModal';
+import UserSlideOverModal from '@/components/admin/UserSlideOverModal';
 import Toast from '@/components/shared/Toast';
 
 export default function UserManagementPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -22,6 +25,11 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  
+  // Slide-over state
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [editingUserId, setEditingUserId] = useState<string | undefined>(undefined);
 
   const [toastConfig, setToastConfig] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
 
@@ -32,14 +40,16 @@ export default function UserManagementPage() {
       if (search) params.append('search', search);
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
-      params.append('page', pagination.page.toString());
-      params.append('limit', pagination.limit.toString());
+      params.append('page', page.toString());
+      params.append('limit', '10');
 
       const res = await fetch(`/api/admin/users?${params.toString()}`, { signal });
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data.users);
-      setPagination(data.pagination);
+      
+      setTotal(data.pagination?.total ?? data.total ?? 0);
+      setTotalPages(data.pagination?.totalPages ?? data.totalPages ?? 1);
     } catch (error: any) {
       if (error.name === 'AbortError') return; // Ignore aborted requests
       console.error(error);
@@ -47,7 +57,7 @@ export default function UserManagementPage() {
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [search, roleFilter, statusFilter, pagination.page, pagination.limit]);
+  }, [search, roleFilter, statusFilter, page]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -66,24 +76,21 @@ export default function UserManagementPage() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
   const handleRoleChange = (value: string) => {
     setRoleFilter(value);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
-    setPagination(p => ({ ...p, page: 1 }));
+    setPage(1);
   };
 
-  // FIXED: BUG-04 — Route to the correct edit page based on actual user role
   const handleEdit = (user: UserRow) => {
-    if (user.role === 'TECHNICIAN') {
-      router.push(`/admin/users/technicians/${user.id}/edit`);
-    } else {
-      router.push(`/admin/users/${user.id}/edit`);
-    }
+    setUserModalMode('edit');
+    setEditingUserId(user.id);
+    setIsUserModalOpen(true);
   };
 
   const handleDeactivate = (user: UserRow) => {
@@ -136,13 +143,17 @@ export default function UserManagementPage() {
     <div className="w-full flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="font-h1 text-h1 text-on-surface">User Management</h1>
-        <Link
-          href="/admin/users/technicians/create"
+        <button
+          onClick={() => {
+            setUserModalMode('create');
+            setEditingUserId(undefined);
+            setIsUserModalOpen(true);
+          }}
           className="inline-flex items-center justify-center gap-2 bg-secondary hover:bg-secondary-container text-on-secondary px-6 py-3 rounded-lg font-semibold transition-colors shadow-sm w-fit"
         >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Add Technician
-        </Link>
+          <span className="material-symbols-outlined text-[20px]">person_add</span>
+          Add User
+        </button>
       </div>
 
       <UsersFilterBar
@@ -163,8 +174,8 @@ export default function UserManagementPage() {
           onResetPassword={handleResetPassword}
         />
         <UsersPagination
-          pagination={pagination}
-          onPageChange={(page) => setPagination(p => ({ ...p, page }))}
+          pagination={{ total, page, limit: 10, totalPages }}
+          onPageChange={(newPage) => setPage(newPage)}
         />
       </div>
 
@@ -180,6 +191,21 @@ export default function UserManagementPage() {
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
         onConfirm={confirmResetPassword}
+      />
+
+      <UserSlideOverModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        mode={userModalMode}
+        userId={editingUserId}
+        onSuccess={() => {
+          setToastConfig({
+            show: true,
+            message: `User successfully ${userModalMode === 'create' ? 'created' : 'updated'}`,
+            type: 'success'
+          });
+          fetchUsers(true);
+        }}
       />
 
       {toastConfig.show && (
