@@ -66,7 +66,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { firstName, lastName, email, contactNumber, specialization, preferences } = body;
+    const { firstName, lastName, email, contactNumber, specialization, preferences, avatarUrl } = body;
 
     // FIXED: MINOR #2 — Added input validation to profile PATCH
     if (!firstName || typeof firstName !== 'string' || firstName.trim().length < 1) {
@@ -106,6 +106,7 @@ export async function PATCH(request: Request) {
         email,
         contactNumber: contactNumber || null,
         specialization: specialization as Specialization,
+        ...(avatarUrl !== undefined && { avatarUrl }),
       },
     });
 

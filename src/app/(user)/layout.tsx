@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import UserSidebar from '@/components/user/UserSidebar';
-import UserTopBar from '@/components/user/UserTopBar';
+import UserLayoutClient from '@/components/user/UserLayoutClient';
 
 export default async function UserLayout({
   children,
@@ -37,12 +36,8 @@ export default async function UserLayout({
   };
 
   return (
-    <div className="bg-surface-container-low text-on-surface font-body text-body min-h-screen antialiased">
-      <UserSidebar />
-      <UserTopBar user={user} />
-      <main className="ml-[260px] pt-16 min-h-screen bg-surface-container-low px-8 py-8">
-        {children}
-      </main>
-    </div>
+    <UserLayoutClient user={user}>
+      {children}
+    </UserLayoutClient>
   );
 }

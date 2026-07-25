@@ -44,12 +44,16 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
   };
 
   const getDisplayLabel = (req: Partial<MaintenanceRequest>) => {
+    if (req.status === 'COMPLETED') return 'Completed';
+    if (req.status === 'REJECTED') return 'Rejected';
+    if (req.status === 'CANCELLED') return 'Cancelled';
+
     if (req.priorityLevel === 'URGENT') return 'Urgent';
+
     if (req.status === 'PENDING') return 'Pending';
     if (req.status === 'APPROVED') return 'Approved';
     if (req.status === 'ONGOING') return 'Ongoing';
     if (req.status === 'ON_HOLD') return 'On Hold';
-    if (req.status === 'COMPLETED') return 'Completed';
     return req.status || (req.priorityLevel === 'NORMAL' ? 'Normal' : 'Unknown');
   };
 

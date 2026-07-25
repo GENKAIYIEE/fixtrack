@@ -3,6 +3,33 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+const calculatePasswordStrength = (pass: string) => {
+  const reqs = {
+    length: pass.length >= 8,
+    lowercase: /[a-z]/.test(pass),
+    uppercase: /[A-Z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[^a-zA-Z0-9]/.test(pass),
+  };
+
+  if (!pass) return { score: 0, label: '', color: 'bg-transparent', text: '', reqs };
+  
+  let score = 0;
+  if (reqs.length) score += 1;
+  if (reqs.lowercase) score += 1;
+  if (reqs.uppercase) score += 1;
+  if (reqs.number) score += 1;
+  if (reqs.special) score += 1;
+
+  if (!reqs.length) {
+    score = Math.min(score, 2);
+  }
+
+  if (score <= 2) return { score, label: 'Weak', color: 'bg-red-500', text: 'text-red-500', reqs };
+  if (score <= 4) return { score, label: 'Medium', color: 'bg-yellow-500', text: 'text-yellow-600', reqs };
+  return { score, label: 'Strong', color: 'bg-green-500', text: 'text-green-600', reqs };
+};
+
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -15,6 +42,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const strength = calculatePasswordStrength(password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +58,11 @@ export default function RegisterPage() {
 
     if (password.length < 8) {
       setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+
+    if (strength.score <= 2) {
+      setErrorMessage('Password is too weak. Please include a mix of uppercase/lowercase letters, numbers, and special characters.');
       return;
     }
 
@@ -107,19 +141,20 @@ export default function RegisterPage() {
       </div>
       
       {/* Right Panel (Registration Form) */}
-      <div className="w-full lg:w-[55%] h-screen flex flex-col justify-center p-8 overflow-hidden relative">
+      <div className="w-full lg:w-[55%] h-screen overflow-y-auto relative bg-surface-container-lowest">
         <Link 
           href="/login" 
-          className="absolute top-8 left-8 inline-flex items-center justify-center w-10 h-10 rounded-full border border-outline-variant text-on-surface hover:bg-surface-container transition-all"
+          className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full border border-outline-variant text-on-surface bg-surface-container-lowest hover:bg-surface-container transition-all"
           title="Back to Login"
         >
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_back</span>
         </Link>
         
-        <div className="w-full max-w-[512px] mx-auto py-6">
-          <div className="mb-8">
-            <h1 className="font-sans text-h1 text-on-surface mb-2">Create Your Account</h1>
-            <p className="font-sans text-body text-on-surface-variant">Fill in your details to request system access</p>
+        <div className="flex flex-col min-h-full p-6 lg:p-8 pt-24 lg:pt-24 pb-12">
+          <div className="w-full max-w-[512px] mx-auto my-auto">
+            <div className="mb-8">
+              <h1 className="font-sans text-h1 text-on-surface mb-2">Create Your Account</h1>
+              <p className="font-sans text-body text-on-surface-variant">Fill in your details to request system access</p>
           </div>
           
 
@@ -230,6 +265,44 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading || successMessage !== null}
               />
+              {password && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex gap-1 h-1.5 w-full">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div 
+                        key={level} 
+                        className={`h-full flex-1 rounded-full transition-colors duration-300 ${strength.score >= level ? strength.color : 'bg-gray-200'}`}
+                      ></div>
+                    ))}
+                  </div>
+                  <span className={`text-xs font-medium ${strength.text}`}>
+                    {strength.label}
+                  </span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 text-xs text-on-surface-variant">
+                    <div className={`flex items-center gap-1 ${strength.reqs.length ? 'text-green-600' : 'opacity-70'}`}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{strength.reqs.length ? 'check' : 'close'}</span>
+                      At least 8 characters
+                    </div>
+                    <div className={`flex items-center gap-1 ${strength.reqs.uppercase ? 'text-green-600' : 'opacity-70'}`}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{strength.reqs.uppercase ? 'check' : 'close'}</span>
+                      Uppercase letter
+                    </div>
+                    <div className={`flex items-center gap-1 ${strength.reqs.lowercase ? 'text-green-600' : 'opacity-70'}`}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{strength.reqs.lowercase ? 'check' : 'close'}</span>
+                      Lowercase letter
+                    </div>
+                    <div className={`flex items-center gap-1 ${strength.reqs.number ? 'text-green-600' : 'opacity-70'}`}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{strength.reqs.number ? 'check' : 'close'}</span>
+                      Number
+                    </div>
+                    <div className={`flex items-center gap-1 ${strength.reqs.special ? 'text-green-600' : 'opacity-70'}`}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{strength.reqs.special ? 'check' : 'close'}</span>
+                      Special character
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Confirm Password */}
@@ -291,6 +364,7 @@ export default function RegisterPage() {
               <Link className="font-label-md text-label-md text-secondary hover:text-secondary-container hover:underline transition-all" href="/login">Login</Link>
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -86,9 +86,17 @@ export default function TechnicianCard({
 
       {/* Avatar + Name */}
       <div className="flex flex-col items-center text-center mt-2">
-        <div className="w-14 h-14 bg-primary-container text-primary font-bold text-xl rounded-full flex items-center justify-center mb-2 shadow-sm">
-          {initials}
-        </div>
+        {technician.avatarUrl ? (
+          <img
+            src={technician.avatarUrl}
+            alt={`${technician.firstName} ${technician.lastName || ''}`.trim()}
+            className="w-14 h-14 rounded-full object-cover mb-2 shadow-sm border border-outline-variant"
+          />
+        ) : (
+          <div className="w-14 h-14 bg-primary-container text-primary font-bold text-xl rounded-full flex items-center justify-center mb-2 shadow-sm">
+            {initials}
+          </div>
+        )}
         <h3 className="text-sm font-bold text-on-surface leading-tight">
           {`${technician.firstName} ${technician.lastName || ''}`.trim()}
         </h3>

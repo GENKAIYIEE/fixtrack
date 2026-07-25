@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProfileCard, TechnicianProfile } from '@/components/technician/ProfileCard';
 import { ProfileSecurityCard } from '@/components/technician/ProfileSecurityCard';
 import { ProfileEditCard, ProfileFormData } from '@/components/technician/ProfileEditCard';
@@ -20,6 +20,7 @@ export default function TechnicianProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   // FIXED: MINOR #4 — Replaced alert() with Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = async () => {
     try {
@@ -55,6 +56,46 @@ export default function TechnicianProfilePage() {
 
   const handlePrefChange = (key: keyof NotifPreferences, value: boolean) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: 'Image must be less than 5MB', type: 'error' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64String = event.target?.result as string;
+      if (!profileForm) return;
+      
+      try {
+        setToast({ message: 'Uploading avatar...', type: 'success' });
+        const res = await fetch('/api/technician/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...profileForm, preferences, avatarUrl: base64String }),
+        });
+        
+        if (res.ok) {
+          setToast({ message: 'Avatar updated successfully!', type: 'success' });
+          await fetchProfile();
+        } else {
+          const err = await res.json();
+          setToast({ message: err.error || 'Failed to update avatar', type: 'error' });
+        }
+      } catch (error) {
+        setToast({ message: 'Error uploading avatar', type: 'error' });
+      }
+    };
+    reader.readAsDataURL(file);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSaveAll = async () => {
@@ -149,7 +190,14 @@ export default function TechnicianProfilePage() {
             <div className="hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
               <ProfileCard 
                 user={profile} 
-                onAvatarClick={() => setToast({ message: 'Avatar upload coming soon.', type: 'success' })} 
+                onAvatarClick={() => fileInputRef.current?.click()} 
+              />
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/png, image/jpeg, image/jpg, image/webp" 
+                onChange={handleAvatarUpload} 
               />
             </div>
             <div className="hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
