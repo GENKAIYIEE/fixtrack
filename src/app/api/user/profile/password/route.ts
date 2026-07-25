@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     // Fetch user with password hash
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { password: true, id: true },
+      select: { passwordHash: true, id: true },
     });
 
     if (!user) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
 
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Incorrect current password' }, { status: 400 });
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     // Update password in the database
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: { passwordHash: hashedPassword },
     });
 
     return NextResponse.json({ message: 'Password updated successfully' });
