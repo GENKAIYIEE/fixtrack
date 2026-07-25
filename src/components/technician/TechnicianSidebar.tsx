@@ -2,11 +2,31 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 
 export default function TechnicianSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [badges, setBadges] = useState({ notifications: 0, tasks: 0 });
+
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const res = await fetch('/api/technician/badges');
+        if (res.ok) {
+          const data = await res.json();
+          setBadges({ notifications: data.notifications || 0, tasks: data.tasks || 0 });
+        }
+      } catch (err) {
+        console.error('Failed to fetch badges', err);
+      }
+    };
+    
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
@@ -59,7 +79,17 @@ export default function TechnicianSidebar() {
             >
               {link.icon}
             </span>
-            <span className="font-label-md text-label-md">{link.name}</span>
+            <span className="font-label-md text-label-md flex-1">{link.name}</span>
+            {link.href === '/technician/notifications' && badges.notifications > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {badges.notifications > 99 ? '99+' : badges.notifications}
+              </span>
+            )}
+            {link.href === '/technician/tasks' && badges.tasks > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {badges.tasks > 99 ? '99+' : badges.tasks}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

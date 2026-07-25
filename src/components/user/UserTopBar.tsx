@@ -9,14 +9,21 @@ type UserProps = {
   avatarUrl?: string | null;
 };
 
-export default function UserTopBar({ user }: { user: UserProps }) {
+export default function UserTopBar({ user, onMenuClick }: { user: UserProps, onMenuClick?: () => void }) {
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'ST';
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-between items-center px-8 h-16">
+    <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-260px)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300">
       {/* Left */}
-      <div className="flex items-center gap-4">
-        <span className="font-semibold text-slate-900 tracking-tight">FixTrack Monitoring</span>
+      <div className="flex items-center gap-3 md:gap-4">
+        <button 
+          className="lg:hidden text-slate-500 hover:text-slate-800 p-1 rounded transition-colors" 
+          onClick={onMenuClick}
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <span className="font-semibold text-slate-900 tracking-tight hidden sm:block">FixTrack Monitoring</span>
+        <span className="font-semibold text-slate-900 tracking-tight sm:hidden">FixTrack</span>
       </div>
 
       {/* Right */}
@@ -37,7 +44,7 @@ export default function UserTopBar({ user }: { user: UserProps }) {
 
         {/* User info */}
         <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end">
+          <div className="flex-col items-end hidden sm:flex">
             <span className="font-label-md text-label-md text-on-surface">
               {user.firstName} {user.lastName}
             </span>

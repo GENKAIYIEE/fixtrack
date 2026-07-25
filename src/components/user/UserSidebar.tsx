@@ -5,7 +5,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
-export default function UserSidebar() {
+export default function UserSidebar({ 
+  isOpen, 
+  setIsOpen 
+}: { 
+  isOpen?: boolean; 
+  setIsOpen?: (val: boolean) => void 
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -56,23 +62,31 @@ export default function UserSidebar() {
   ];
 
   return (
-    <aside className="w-[260px] fixed left-0 top-0 h-full bg-[#1E3A8A] shadow-2xl flex flex-col py-6 z-50 border-r border-white/10">
+    <aside className={`w-[260px] fixed left-0 top-0 h-full bg-[#1E3A8A] shadow-2xl flex flex-col py-6 z-50 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Header */}
-      <div className="px-6 mb-8 flex items-center gap-3">
-        <span
-          className="material-symbols-outlined text-3xl text-white"
-          style={{ fontVariationSettings: "'FILL' 1" }}
-        >
-          home_repair_service
-        </span>
-        <div className="flex flex-col">
-          <span className="text-xl font-black tracking-tighter text-white uppercase">
-            FIXTRACK
+      <div className="px-6 mb-8 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className="material-symbols-outlined text-3xl text-white"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            home_repair_service
           </span>
-          <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
-            USER PORTAL
-          </span>
+          <div className="flex flex-col">
+            <span className="text-xl font-black tracking-tighter text-white uppercase">
+              FIXTRACK
+            </span>
+            <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
+              USER PORTAL
+            </span>
+          </div>
         </div>
+        <button 
+          className="lg:hidden text-white hover:bg-white/10 p-1 rounded transition-colors"
+          onClick={() => setIsOpen?.(false)}
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
       </div>
 
       {/* Main Nav */}
@@ -80,7 +94,12 @@ export default function UserSidebar() {
         {navLinks.map((link) => {
           const active = isActive(link.href);
           return (
-            <Link key={link.href} href={link.href} className={getLinkClasses(link.href)}>
+            <Link 
+              key={link.href} 
+              href={link.href} 
+              className={getLinkClasses(link.href)}
+              onClick={() => setIsOpen?.(false)}
+            >
               <span
                 className="material-symbols-outlined"
                 style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
@@ -100,7 +119,11 @@ export default function UserSidebar() {
 
       {/* Footer */}
       <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-1 px-2">
-        <Link href="/profile" className={getLinkClasses('/profile')}>
+        <Link 
+          href="/profile" 
+          className={getLinkClasses('/profile')}
+          onClick={() => setIsOpen?.(false)}
+        >
           <span
             className="material-symbols-outlined"
             style={isActive('/profile') ? { fontVariationSettings: "'FILL' 1" } : undefined}

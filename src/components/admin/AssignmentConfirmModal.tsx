@@ -65,15 +65,23 @@ export default function AssignmentConfirmModal({
           </div>
 
           {/* Arrow */}
-          <div className="text-primary bg-primary-container w-10 h-10 rounded-full flex items-center justify-center -my-2 z-10 border-4 border-surface shadow-sm">
+          <div className="text-white bg-primary w-10 h-10 rounded-full flex items-center justify-center -my-2 z-10 border-4 border-surface shadow-sm">
             <span className="material-symbols-outlined">arrow_downward</span>
           </div>
 
           {/* Technician Summary */}
           <div className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-container text-primary font-bold rounded-full flex items-center justify-center">
-              {initials}
-            </div>
+            {technician.avatarUrl ? (
+              <img
+                src={technician.avatarUrl}
+                alt={`${technician.firstName} ${technician.lastName || ''}`.trim()}
+                className="w-12 h-12 rounded-full object-cover border border-outline-variant shadow-sm"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-primary-container text-primary font-bold rounded-full flex items-center justify-center shadow-sm">
+                {initials}
+              </div>
+            )}
             <div>
               <h3 className="text-sm font-bold text-on-surface">
                 {`${technician.firstName} ${technician.lastName || ''}`.trim()}
