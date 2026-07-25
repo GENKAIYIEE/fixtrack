@@ -46,12 +46,11 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { department, contactNumber } = body;
+    const { contactNumber } = body;
 
     const user = await prisma.user.update({
       where: { email: session.user.email },
       data: {
-        department: department !== undefined ? department : undefined,
         contactNumber: contactNumber !== undefined ? contactNumber : undefined,
       },
       select: {

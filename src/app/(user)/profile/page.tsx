@@ -23,7 +23,13 @@ export default function UserProfilePage() {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editForm, setEditForm] = useState({ department: '', contactNumber: '' });
+  const [editForm, setEditForm] = useState({ contactNumber: '' });
+
+  // Password Modal State
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const [toast, setToast] = useState<{ show: boolean, message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
@@ -62,10 +68,53 @@ export default function UserProfilePage() {
   const handleEditClick = () => {
     if (!user) return;
     setEditForm({
-      department: user.department || '',
       contactNumber: user.contactNumber || ''
     });
     setIsEditModalOpen(true);
+  };
+
+  const handlePasswordChangeClick = () => {
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordError(null);
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordSave = async () => {
+    setPasswordError(null);
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("All fields are required.");
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch('/api/user/profile/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password');
+      
+      setIsPasswordModalOpen(false);
+      showToast('Password changed successfully', 'success');
+    } catch (err: any) {
+      setPasswordError(err.message || 'An error occurred');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleSave = async () => {
@@ -75,7 +124,6 @@ export default function UserProfilePage() {
     const prevUser = user;
     setUser(prevUser ? {
       ...prevUser,
-      department: editForm.department || null,
       contactNumber: editForm.contactNumber || null
     } : null);
 
@@ -84,7 +132,6 @@ export default function UserProfilePage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          department: editForm.department || null,
           contactNumber: editForm.contactNumber || null
         })
       });
@@ -146,55 +193,66 @@ export default function UserProfilePage() {
       <div className="bg-surface-container-lowest rounded-3xl shadow-xl shadow-primary/5 border border-outline-variant overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10">
         
         {/* Premium Header Banner Section */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary px-8 py-12">
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-secondary px-6 sm:px-8 py-8 sm:py-12">
           {/* Decorative background shapes */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
           
-          {/* Edit Button */}
-          <button
-            onClick={handleEditClick}
-            className="absolute top-6 right-6 z-20 bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-sm transition-all hover:scale-105 active:scale-95 border border-white/10"
-          >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
-            Edit Profile
-          </button>
-
-          <div className="flex items-center gap-8 relative z-10">
-            {/* Premium Avatar */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-white rounded-full opacity-20 blur-md group-hover:opacity-40 transition-opacity duration-300"></div>
-              <div className="w-28 h-28 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center text-4xl font-extrabold shrink-0 shadow-lg border-4 border-white/20 relative z-10">
-                {user.firstName[0]}{user.lastName[0]}
-              </div>
-              <div className="absolute bottom-0 right-0 w-8 h-8 bg-green-500 border-4 border-surface-container-lowest rounded-full z-20" title="Active"></div>
-            </div>
-            
-            {/* Name and Status */}
-            <div className="flex flex-col text-white">
-              <h2 className="text-4xl font-bold tracking-tight drop-shadow-sm">
-                {user.firstName} {user.lastName}
-              </h2>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-white/80 font-medium tracking-wide flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm">badge</span>
-                  {user.idNumber}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                <span className="text-white/80 font-medium tracking-wide flex items-center gap-1.5 capitalize">
-                  <span className="material-symbols-outlined text-sm">work</span>
-                  {user.role.toLowerCase()}
-                </span>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-5 sm:gap-8">
+              {/* Premium Avatar */}
+              <div className="relative group shrink-0">
+                <div className="absolute inset-0 bg-white rounded-full opacity-20 blur-md group-hover:opacity-40 transition-opacity duration-300"></div>
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center text-3xl sm:text-4xl font-extrabold shrink-0 shadow-lg border-4 border-white/20 relative z-10">
+                  {user.firstName[0]}{user.lastName[0]}
+                </div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 border-4 border-surface-container-lowest rounded-full z-20" title="Active"></div>
               </div>
               
-              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white px-3 py-1.5 rounded-full mt-4 self-start shadow-sm border border-white/10 transition-transform duration-300 cursor-default">
-                <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
-                  verified_user
-                </span>
-                <span className="text-xs font-bold tracking-widest uppercase">
-                  {user.accountStatus}
-                </span>
+              {/* Name and Status */}
+              <div className="flex flex-col text-white">
+                <h2 className="text-2xl sm:text-4xl font-bold tracking-tight drop-shadow-sm">
+                  {user.firstName} {user.lastName}
+                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 sm:mt-2">
+                  <span className="text-white/80 text-sm sm:text-base font-medium tracking-wide flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm">badge</span>
+                    {user.idNumber}
+                  </span>
+                  <span className="hidden sm:block w-1 h-1 rounded-full bg-white/50"></span>
+                  <span className="text-white/80 text-sm sm:text-base font-medium tracking-wide flex items-center gap-1.5 capitalize">
+                    <span className="material-symbols-outlined text-sm">work</span>
+                    {user.role.toLowerCase()}
+                  </span>
+                </div>
+                
+                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-full mt-3 sm:mt-4 self-start shadow-sm border border-white/10 transition-transform duration-300 cursor-default">
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>
+                    verified_user
+                  </span>
+                  <span className="text-[10px] sm:text-xs font-bold tracking-widest uppercase">
+                    {user.accountStatus}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-row items-center gap-3 w-full md:w-auto pt-4 md:pt-0 border-t border-white/20 md:border-none mt-2 md:mt-0">
+              <button
+                onClick={handlePasswordChangeClick}
+                className="flex-1 md:flex-none justify-center bg-black/20 hover:bg-black/40 text-white backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-105 active:scale-95 border border-white/10"
+              >
+                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">lock</span>
+                Password
+              </button>
+              <button
+                onClick={handleEditClick}
+                className="flex-1 md:flex-none justify-center bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-105 active:scale-95 border border-white/10"
+              >
+                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">edit</span>
+                Edit
+              </button>
             </div>
           </div>
         </div>
@@ -298,19 +356,6 @@ export default function UserProfilePage() {
             {/* Body */}
             <div className="p-6 space-y-4 bg-surface-container-lowest">
               <div className="space-y-1">
-                <label htmlFor="department" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Department</label>
-                <input
-                  id="department"
-                  type="text"
-                  value={editForm.department}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
-                  placeholder="e.g. College of Computer Studies"
-                  disabled={isSaving}
-                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <label htmlFor="contactNumber" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Contact Number</label>
                 <input
                   id="contactNumber"
@@ -347,6 +392,102 @@ export default function UserProfilePage() {
                   <>
                     <span className="material-symbols-outlined text-[18px]">save</span>
                     Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Change Password Modal ── */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isChangingPassword && setIsPasswordModalOpen(false)} />
+          <div className="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md border border-outline-variant overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-outline-variant/60 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">lock</span>
+                Change Password
+              </h2>
+              <button 
+                onClick={() => setIsPasswordModalOpen(false)} 
+                disabled={isChangingPassword}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-outline transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-6 space-y-4 bg-surface-container-lowest">
+              {passwordError && (
+                <div className="p-3 rounded-lg bg-error-container text-on-error-container text-sm font-medium flex items-start gap-2">
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>error</span>
+                  <span>{passwordError}</span>
+                </div>
+              )}
+              <div className="space-y-1">
+                <label htmlFor="currentPassword" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Current Password</label>
+                <input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  disabled={isChangingPassword}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="newPassword" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">New Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  disabled={isChangingPassword}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="confirmPassword" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Confirm New Password</label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  disabled={isChangingPassword}
+                  className="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition disabled:opacity-50 text-on-surface"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-outline-variant/60 bg-surface-container/30 flex justify-end gap-3">
+              <button
+                onClick={() => setIsPasswordModalOpen(false)}
+                disabled={isChangingPassword}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-highest transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordSave}
+                disabled={isChangingPassword}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70"
+              >
+                {isChangingPassword ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">check</span>
+                    Update Password
                   </>
                 )}
               </button>

@@ -81,7 +81,7 @@ function NewRequestContent() {
     if (!formData.building) e.building = 'Please select a building.';
     if (!formData.roomNumber.trim()) e.roomNumber = 'Please enter the room or area.';
     if (!formData.title.trim()) e.title = 'Please provide a brief title.';
-    if (formData.description.trim().length < 20) e.description = 'Description must be at least 20 characters.';
+    if (!formData.description.trim()) e.description = 'Please provide a detailed description.';
     return e;
   };
 
@@ -336,7 +336,7 @@ function NewRequestContent() {
                   <div>
                     {errors.description && <p className={errorClass}>{errors.description}</p>}
                   </div>
-                  <div className={`text-xs text-right ${formData.description.length > 400 ? 'text-error' : hasSubmitted && formData.description.length < 20 ? 'text-error' : 'text-outline'}`}>
+                  <div className={`text-xs text-right ${formData.description.length > 400 ? 'text-error' : 'text-outline'}`}>
                     {formData.description.length}/500 characters
                   </div>
                 </div>

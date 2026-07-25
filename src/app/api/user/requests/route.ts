@@ -97,9 +97,6 @@ export async function POST(request: Request) {
         return Response.json({ error: `${key} is required` }, { status: 400 });
       }
     }
-    if (description.trim().length < 20) {
-      return Response.json({ error: 'Description too short' }, { status: 400 });
-    }
 
     // Generate unique collision-resistant requestCode
     const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
