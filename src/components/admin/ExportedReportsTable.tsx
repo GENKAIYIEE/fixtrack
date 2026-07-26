@@ -38,7 +38,7 @@ export default function ExportedReportsTable() {
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[700px]">
           <thead>
             <tr className="bg-primary-container text-on-primary-container font-label-lg border-b border-outline-variant/20">
               <th className="py-3 px-5">Report Name</th>

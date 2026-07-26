@@ -53,36 +53,38 @@ export default function TasksTable({ tasks, isLoading }: TasksTableProps) {
   if (isLoading) {
     return (
       <div className="bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(30,58,138,0.08)] border-b-2 border-primary-container overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-primary-container text-white font-table-header text-table-header">
-              <th className="px-6 py-4">ID</th>
-              <th className="px-6 py-4">Type</th>
-              <th className="px-6 py-4">Reported By</th>
-              <th className="px-6 py-4">Location</th>
-              <th className="px-6 py-4">Priority</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Assigned Date</th>
-              <th className="px-6 py-4">Completed Date</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...Array(10)].map((_, i) => (
-              <tr key={i} className="border-t border-surface-variant animate-pulse bg-surface-container-lowest">
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-20"></div></td>
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-32"></div></td>
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-28"></div></td>
-                <td className="px-6 py-4"><div className="h-6 bg-surface-variant rounded-full w-16"></div></td>
-                <td className="px-6 py-4"><div className="h-6 bg-surface-variant rounded-full w-20"></div></td>
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
-                <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
-                <td className="px-6 py-4 text-right"><div className="h-8 bg-surface-variant rounded w-24 ml-auto"></div></td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="bg-primary-container text-white font-table-header text-table-header">
+                <th className="px-6 py-4">ID</th>
+                <th className="px-6 py-4">Type</th>
+                <th className="px-6 py-4">Reported By</th>
+                <th className="px-6 py-4">Location</th>
+                <th className="px-6 py-4">Priority</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Assigned Date</th>
+                <th className="px-6 py-4">Completed Date</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[...Array(10)].map((_, i) => (
+                <tr key={i} className="border-t border-surface-variant animate-pulse bg-surface-container-lowest">
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-20"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-32"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-28"></div></td>
+                  <td className="px-6 py-4"><div className="h-6 bg-surface-variant rounded-full w-16"></div></td>
+                  <td className="px-6 py-4"><div className="h-6 bg-surface-variant rounded-full w-20"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 bg-surface-variant rounded w-24"></div></td>
+                  <td className="px-6 py-4 text-right"><div className="h-8 bg-surface-variant rounded w-24 ml-auto"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }

@@ -113,9 +113,9 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto w-full">
+    <div className="max-w-[1400px] mx-auto w-full">
       {/* Page Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
         <div>
           <h1 className="font-h1 text-primary-container mb-2">Reports & Analytics</h1>
           <p className="text-on-surface-variant font-body-lg max-w-2xl">

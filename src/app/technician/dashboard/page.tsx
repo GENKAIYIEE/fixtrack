@@ -85,12 +85,12 @@ export default function TechnicianDashboardPage() {
     : 'General';
 
   return (
-    <div className="p-8 max-w-[1440px] mx-auto w-full">
+    <div className="max-w-[1440px] mx-auto w-full">
       {/* Urgent Banner */}
       <UrgentTaskBanner urgentTask={data?.urgentTask ?? null} />
 
       {/* Page Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           {isLoading ? (
             <div className="animate-pulse">

@@ -227,7 +227,7 @@ export default function NotificationsInbox({
     <div className="max-w-3xl mx-auto space-y-4">
 
       {/* ── Page header ── */}
-      <div className={`flex items-center ${hideHeader ? 'justify-end' : 'justify-between'}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 ${hideHeader ? 'justify-end' : 'justify-between'}`}>
         {!hideHeader && (
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-semibold text-on-surface">Inbox</h1>
@@ -239,7 +239,7 @@ export default function NotificationsInbox({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleDeleteAllRead}
             disabled={isDeletingAll || !notifications.some(n => n.isRead)}

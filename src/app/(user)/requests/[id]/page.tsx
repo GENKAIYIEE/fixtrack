@@ -132,7 +132,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="w-full max-w-4xl p-4 md:p-8">
+      <div className="w-full max-w-4xl">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-slate-200 rounded w-32" />
           <div className="bg-slate-100 rounded-xl h-28" />
@@ -145,7 +145,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
   // ── Error ─────────────────────────────────────────────────────────────────────
   if (error || !request) {
     return (
-      <div className="w-full max-w-4xl p-4 md:p-8">
+      <div className="w-full max-w-4xl">
         <Link href="/history" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors mb-6">
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           Back to My Requests
@@ -162,7 +162,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
   const displayTitle = request.title ?? `${ISSUE_TYPE_LABELS[request.issueType] ?? request.issueType} Issue`;
 
   return (
-    <div className="w-full max-w-4xl p-4 md:p-8">
+    <div className="w-full max-w-4xl">
       {/* ── Back ─────────────────────────────────────────────────────────────── */}
       <div className="mb-6">
         <Link

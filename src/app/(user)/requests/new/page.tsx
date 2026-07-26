@@ -173,7 +173,7 @@ function NewRequestContent() {
   const dividerClass = "border-t border-outline-variant my-6";
 
   return (
-    <div className="min-h-screen bg-surface-container-lowest py-8 px-4">
+    <div className="min-h-screen bg-surface-container-lowest">
       {/* Page Header */}
       <div className="max-w-3xl mx-auto mb-8">
         <h1 className="font-h1 text-h1 text-on-surface flex items-center gap-3 text-3xl font-bold">

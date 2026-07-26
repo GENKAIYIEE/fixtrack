@@ -190,7 +190,7 @@ export default function UserRequestsPage() {
 
   return (
     <div className="min-h-screen bg-surface-container-lowest">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="font-h1 text-h1 text-on-surface flex items-center gap-3 text-3xl font-bold">

@@ -82,7 +82,7 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[750px]">
           <thead>
             <tr className="bg-primary-container text-on-primary font-table-header text-table-header text-xs uppercase tracking-wider">
               <th className="px-4 py-3 font-semibold">ID</th>

@@ -64,8 +64,8 @@ export default function UsersTable({
   };
 
   return (
-    <div className="w-full">
-      <table className="w-full text-left border-collapse">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-primary-container text-on-primary font-table-header text-table-header">
               <th className="px-6 py-4 font-semibold text-sm">User</th>

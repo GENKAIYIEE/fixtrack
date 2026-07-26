@@ -181,9 +181,9 @@ export default function TechnicianNotificationsPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-8 font-['Inter'] relative pb-24">
+    <div className="max-w-5xl mx-auto font-['Inter'] relative pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Notifications</h1>
         <div className="flex items-center gap-6">
           <button 

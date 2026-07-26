@@ -258,7 +258,7 @@ export default function UserProfilePage() {
         </div>
 
         {/* Details Grid Section */}
-        <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-12 bg-gradient-to-b from-surface-container-lowest to-surface-container-low/30">
+        <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-12 bg-gradient-to-b from-surface-container-lowest to-surface-container-low/30">
           
           {/* Column 1: Personal Details */}
           <div className="flex flex-col gap-6 relative">

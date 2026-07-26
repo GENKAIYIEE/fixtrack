@@ -151,7 +151,7 @@ export default function TechnicianProfilePage() {
   }
 
   return (
-    <div className="p-8 pb-24 relative min-h-screen bg-slate-50">
+    <div className="pb-24 relative min-h-screen bg-slate-50">
       {/* Decorative ambient background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
@@ -160,7 +160,7 @@ export default function TechnicianProfilePage() {
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] border border-slate-100 px-8 py-6 mb-6 flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] border border-slate-100 px-4 sm:px-8 py-6 mb-6 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
           <div>
             <h1 className="text-2xl font-bold text-[#1E3A8A] flex items-center gap-2">
               My Profile & Settings

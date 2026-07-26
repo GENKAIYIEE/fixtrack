@@ -76,7 +76,7 @@ export default function TechnicianTasksPage() {
   };
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto w-full">
+    <div className="max-w-[1400px] mx-auto w-full">
       <div className="flex items-center gap-4 mb-8">
         <h1 className="font-h1 text-h1 text-on-surface">My Tasks</h1>
         <div className="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full font-label-md text-label-md">
