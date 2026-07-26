@@ -69,8 +69,8 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
           View All <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </button>
       </div>
-      <div className="w-full">
-        <table className="w-full text-left border-collapse table-fixed">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full text-left border-collapse table-fixed min-w-[750px]">
           <thead>
             <tr className="bg-[#1E3A8A] text-white">
               <th className="px-6 py-4 font-table-header text-table-header uppercase tracking-wider w-28">ID</th>

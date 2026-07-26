@@ -181,7 +181,7 @@ export default function AllRequestsTable({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[1000px]">
           {/* ── Header ── */}
           <thead>
             <tr className="bg-[#1E3A8A] text-white">

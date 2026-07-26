@@ -74,7 +74,7 @@ export default function TaskHistoryPage() {
   };
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto w-full">
+    <div className="max-w-[1400px] mx-auto w-full">
       <div className="flex items-center gap-4 mb-8">
         <h1 className="font-h1 text-h1 text-on-surface">Task History</h1>
         <div className="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full font-label-md text-label-md">
@@ -101,7 +101,7 @@ export default function TaskHistoryPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-container-lowest">
                   <th className="py-4 px-6 font-label-lg text-on-surface-variant w-[15%]">Request Code</th>

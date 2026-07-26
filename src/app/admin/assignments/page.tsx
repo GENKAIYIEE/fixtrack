@@ -171,7 +171,7 @@ function AssignmentsContent() {
   const hasFetchErrors = Object.values(fetchErrors).some(Boolean);
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto h-full flex flex-col">
+    <div className="max-w-[1600px] mx-auto h-full flex flex-col">
       {/* Page Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
@@ -220,13 +220,13 @@ function AssignmentsContent() {
       {loading ? (
         /* Skeleton loader */
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 animate-pulse min-h-[600px]">
-          <div className="md:col-span-5 bg-surface-container rounded-xl h-[calc(100vh-12rem)]" />
-          <div className="md:col-span-7 bg-surface-container rounded-xl h-[calc(100vh-12rem)]" />
+          <div className="md:col-span-5 bg-surface-container rounded-xl h-[500px] md:h-[calc(100vh-12rem)]" />
+          <div className="md:col-span-7 bg-surface-container rounded-xl h-[500px] md:h-[calc(100vh-12rem)]" />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1 min-h-[600px]">
           {/* Left Panel — Unassigned Requests */}
-          <div className="md:col-span-5 h-[calc(100vh-12rem)]">
+          <div className="md:col-span-5 h-[500px] md:h-[calc(100vh-12rem)]">
             <UnassignedRequestsPanel
               requests={requests}
               selectedRequestId={selectedRequestId}
@@ -235,7 +235,7 @@ function AssignmentsContent() {
           </div>
 
           {/* Right Panel — Technician Availability */}
-          <div className="md:col-span-7 h-[calc(100vh-12rem)]">
+          <div className="md:col-span-7 h-[500px] md:h-[calc(100vh-12rem)]">
             <TechnicianAvailabilityBoard
               technicians={technicians}
               selectedTechnicianId={selectedTechnicianId}

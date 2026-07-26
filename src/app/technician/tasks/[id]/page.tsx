@@ -106,7 +106,7 @@ export default function TechnicianTaskDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 pb-24">
+      <div className="pb-24">
         <div className="animate-pulse space-y-8">
           <div className="h-12 bg-surface-variant rounded w-1/3"></div>
           <div className="grid grid-cols-12 gap-lg">
@@ -121,7 +121,7 @@ export default function TechnicianTaskDetailPage() {
 
   if (!task) {
     return (
-      <div className="p-8 pb-24 flex justify-center items-center h-full text-on-surface-variant">
+      <div className="pb-24 flex justify-center items-center h-full text-on-surface-variant">
         Task not found.
       </div>
     );
@@ -143,7 +143,7 @@ export default function TechnicianTaskDetailPage() {
   };
 
   return (
-    <div className="p-8 pb-24 max-w-7xl mx-auto">
+    <div className="pb-24 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-6">
         <div>

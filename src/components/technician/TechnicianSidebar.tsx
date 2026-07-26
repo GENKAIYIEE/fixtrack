@@ -4,11 +4,20 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
+import ConfirmLogoutModal from '@/components/shared/ConfirmLogoutModal';
 
-export default function TechnicianSidebar() {
+export default function TechnicianSidebar({
+  isOpen,
+  onClose,
+}: {
+  isOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [badges, setBadges] = useState({ notifications: 0, tasks: 0 });
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const fetchBadges = async () => {
@@ -28,7 +37,9 @@ export default function TechnicianSidebar() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = async () => {
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    onClose?.();
     await signOut({ redirect: false });
     router.push('/login');
   };
@@ -52,58 +63,89 @@ export default function TechnicianSidebar() {
     pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <aside className="w-[260px] h-full fixed left-0 top-0 border-r border-white/10 shadow-2xl bg-[#1E3A8A] text-blue-600 font-['Inter'] antialiased tracking-tight z-50 flex flex-col py-6">
-      {/* Header */}
-      <div className="px-6 mb-8 flex items-center gap-3">
-        <span
-          className="material-symbols-outlined text-3xl text-white"
-          style={{ fontVariationSettings: "'FILL' 1" }}
-        >
-          home_repair_service
-        </span>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xl font-black tracking-tighter text-white uppercase">FIXTRACK</span>
-          <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
-            TECHNICIAN PORTAL
-          </span>
-        </div>
-      </div>
-
-      {/* Main Nav */}
-      <nav className="flex-1 flex flex-col gap-1 px-2">
-        {navLinks.map((link) => (
-          <Link key={link.href} href={link.href} className={getLinkClasses(link.href)}>
+    <>
+      <aside
+        className={`print:hidden w-[260px] h-full fixed left-0 top-0 border-r border-white/10 shadow-2xl bg-[#1E3A8A] text-blue-600 font-['Inter'] antialiased tracking-tight z-50 flex flex-col py-6 transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Header */}
+        <div className="px-6 mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <span
-              className="material-symbols-outlined"
-              style={isActive(link.href) ? { fontVariationSettings: "'FILL' 1" } : undefined}
+              className="material-symbols-outlined text-3xl text-white"
+              style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              {link.icon}
+              home_repair_service
             </span>
-            <span className="font-label-md text-label-md flex-1">{link.name}</span>
-            {link.href === '/technician/notifications' && badges.notifications > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {badges.notifications > 99 ? '99+' : badges.notifications}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xl font-black tracking-tighter text-white uppercase">FIXTRACK</span>
+              <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
+                TECHNICIAN PORTAL
               </span>
-            )}
-            {link.href === '/technician/tasks' && badges.tasks > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {badges.tasks > 99 ? '99+' : badges.tasks}
-              </span>
-            )}
-          </Link>
-        ))}
-      </nav>
+            </div>
+          </div>
+          {/* Mobile Close Button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden p-1 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none"
+              aria-label="Close sidebar"
+            >
+              <span className="material-symbols-outlined text-2xl">close</span>
+            </button>
+          )}
+        </div>
 
-      {/* Footer Nav */}
-      <div className="mt-auto flex flex-col gap-1 px-2 pt-4 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200 text-left w-[calc(100%-16px)]"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span className="font-label-md text-label-md">Logout</span>
-        </button>
-      </div>
-    </aside>
+        {/* Main Nav */}
+        <nav className="flex-1 flex flex-col gap-1 px-2">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => onClose?.()}
+              className={getLinkClasses(link.href)}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={isActive(link.href) ? { fontVariationSettings: "'FILL' 1" } : undefined}
+              >
+                {link.icon}
+              </span>
+              <span className="font-label-md text-label-md flex-1">{link.name}</span>
+              {link.href === '/technician/notifications' && badges.notifications > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {badges.notifications > 99 ? '99+' : badges.notifications}
+                </span>
+              )}
+              {link.href === '/technician/tasks' && badges.tasks > 0 && (
+                <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {badges.tasks > 99 ? '99+' : badges.tasks}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Footer Nav */}
+        <div className="mt-auto flex flex-col gap-1 px-2 pt-4 border-t border-white/10">
+          <button
+            type="button"
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200 text-left w-[calc(100%-16px)]"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span className="font-label-md text-label-md">Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <ConfirmLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+      />
+    </>
   );
 }

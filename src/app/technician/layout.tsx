@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import TechnicianSidebar from '@/components/technician/TechnicianSidebar';
-import TechnicianTopBar from '@/components/technician/TechnicianTopBar';
+import TechnicianLayoutClient from '@/components/technician/TechnicianLayoutClient';
 
 export default async function TechnicianLayout({
   children,
@@ -31,12 +30,8 @@ export default async function TechnicianLayout({
   };
 
   return (
-    <div className="bg-surface-container-low text-on-surface font-body text-body min-h-screen antialiased">
-      <TechnicianSidebar />
-      <TechnicianTopBar firstName={user.firstName} lastName={user.lastName} />
-      <main className="ml-[260px] pt-16 min-h-screen bg-surface-container-low">
-        {children}
-      </main>
-    </div>
+    <TechnicianLayoutClient firstName={user.firstName} lastName={user.lastName}>
+      {children}
+    </TechnicianLayoutClient>
   );
 }

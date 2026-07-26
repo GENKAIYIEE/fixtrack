@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import ConfirmLogoutModal from '@/components/shared/ConfirmLogoutModal';
 
 export default function UserSidebar({ 
   isOpen, 
@@ -15,6 +16,8 @@ export default function UserSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -34,7 +37,9 @@ export default function UserSidebar({
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = async () => {
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    setIsOpen?.(false);
     await signOut({ redirect: false });
     router.push('/login');
   };
@@ -62,84 +67,95 @@ export default function UserSidebar({
   ];
 
   return (
-    <aside className={`w-[260px] fixed left-0 top-0 h-full bg-[#1E3A8A] shadow-2xl flex flex-col py-6 z-50 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      {/* Header */}
-      <div className="px-6 mb-8 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span
-            className="material-symbols-outlined text-3xl text-white"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            home_repair_service
-          </span>
-          <div className="flex flex-col">
-            <span className="text-xl font-black tracking-tighter text-white uppercase">
-              FIXTRACK
-            </span>
-            <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
-              USER PORTAL
-            </span>
-          </div>
-        </div>
-        <button 
-          className="lg:hidden text-white hover:bg-white/10 p-1 rounded transition-colors"
-          onClick={() => setIsOpen?.(false)}
-        >
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
-
-      {/* Main Nav */}
-      <nav className="flex-1 flex flex-col gap-1 px-2">
-        {navLinks.map((link) => {
-          const active = isActive(link.href);
-          return (
-            <Link 
-              key={link.href} 
-              href={link.href} 
-              className={getLinkClasses(link.href)}
-              onClick={() => setIsOpen?.(false)}
+    <>
+      <aside className={`w-[260px] fixed left-0 top-0 h-full bg-[#1E3A8A] shadow-2xl flex flex-col py-6 z-50 border-r border-white/10 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Header */}
+        <div className="px-6 mb-8 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="material-symbols-outlined text-3xl text-white"
+              style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              <span
-                className="material-symbols-outlined"
-                style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
-              >
-                {link.icon}
+              home_repair_service
+            </span>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tighter text-white uppercase">
+                FIXTRACK
               </span>
-              <span className="font-label-md text-label-md flex-1">{link.name}</span>
-              {link.href === '/notifications' && unreadCount > 0 && (
-                <span className="ml-auto bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-1 px-2">
-        <Link 
-          href="/profile" 
-          className={getLinkClasses('/profile')}
-          onClick={() => setIsOpen?.(false)}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={isActive('/profile') ? { fontVariationSettings: "'FILL' 1" } : undefined}
+              <span className="font-sidebar-label text-sidebar-label text-blue-300 uppercase tracking-widest">
+                USER PORTAL
+              </span>
+            </div>
+          </div>
+          <button 
+            type="button"
+            className="lg:hidden text-white hover:bg-white/10 p-1 rounded transition-colors"
+            onClick={() => setIsOpen?.(false)}
           >
-            person
-          </span>
-          <span className="font-label-md text-label-md">My Profile</span>
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200 text-left w-[calc(100%-16px)]"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span className="font-label-md text-label-md">Logout</span>
-        </button>
-      </div>
-    </aside>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Main Nav */}
+        <nav className="flex-1 flex flex-col gap-1 px-2">
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                className={getLinkClasses(link.href)}
+                onClick={() => setIsOpen?.(false)}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >
+                  {link.icon}
+                </span>
+                <span className="font-label-md text-label-md flex-1">{link.name}</span>
+                {link.href === '/notifications' && unreadCount > 0 && (
+                  <span className="ml-auto bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-1 px-2">
+          <Link 
+            href="/profile" 
+            className={getLinkClasses('/profile')}
+            onClick={() => setIsOpen?.(false)}
+          >
+            <span
+              className="material-symbols-outlined"
+              style={isActive('/profile') ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              person
+            </span>
+            <span className="font-label-md text-label-md">My Profile</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="text-slate-300 hover:bg-white/10 hover:text-white rounded-lg px-4 py-2.5 mx-2 flex items-center gap-3 transition-all duration-200 text-left w-[calc(100%-16px)]"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span className="font-label-md text-label-md">Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <ConfirmLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+      />
+    </>
   );
 }

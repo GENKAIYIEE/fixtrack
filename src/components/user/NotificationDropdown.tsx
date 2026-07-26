@@ -105,7 +105,7 @@ export default function NotificationDropdown({ viewAllPath = '/user/notification
       </button>
 
       {isOpen && (
-        <div className="absolute top-12 right-0 w-80 bg-surface rounded-2xl shadow-xl border border-surface-container-high overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed top-16 left-3 right-3 w-auto max-w-[calc(100vw-24px)] sm:absolute sm:top-12 sm:left-auto sm:right-0 sm:w-80 sm:max-w-none bg-surface rounded-2xl shadow-xl border border-surface-container-high overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex justify-between items-center p-4 border-b border-surface-container-high bg-surface-container-low">
             <h3 className="font-label-md text-on-surface">Notifications</h3>
             {unreadCount > 0 && (

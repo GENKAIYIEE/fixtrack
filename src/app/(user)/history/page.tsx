@@ -270,13 +270,13 @@ export default function RequestHistoryPage() {
         {/* Toolbar */}
         <div className="px-6 py-4 border-b border-outline-variant flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {TAB_FILTERS.map((tab) => (
               <button
                 key={tab}
                 id={`history-tab-${tab.toLowerCase()}`}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
+                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
                   activeTab === tab
                     ? 'bg-[#2563EB] text-white shadow-sm'
                     : 'bg-surface-container text-on-surface-variant hover:bg-primary-fixed/20'
@@ -305,7 +305,7 @@ export default function RequestHistoryPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[850px]">
             <thead>
               <tr className="bg-[#1E3A8A]/10 text-on-surface text-xs font-semibold uppercase tracking-wider">
                 <th className="px-5 py-3">Request ID</th>
