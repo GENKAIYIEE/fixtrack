@@ -38,6 +38,7 @@ export async function GET() {
     const [
       totalAssigned,
       ongoing,
+      onHold,
       completedToday,
       completedThisMonth,
       activeTasks,
@@ -48,6 +49,9 @@ export async function GET() {
       }),
       prisma.maintenanceRequest.count({
         where: { assignedToId: technicianId, status: 'ONGOING' },
+      }),
+      prisma.maintenanceRequest.count({
+        where: { assignedToId: technicianId, status: 'ON_HOLD' },
       }),
       prisma.maintenanceRequest.count({
         where: {
@@ -64,7 +68,7 @@ export async function GET() {
         },
       }),
       prisma.maintenanceRequest.findMany({
-        where: { assignedToId: technicianId, status: 'ONGOING' },
+        where: { assignedToId: technicianId, status: { in: ['ONGOING', 'ON_HOLD'] } },
         take: 4,
         orderBy: [{ urgencyLevel: 'desc' }, { createdAt: 'asc' }],
         include: {
@@ -82,7 +86,7 @@ export async function GET() {
     ]);
 
     return NextResponse.json({
-      kpis: { totalAssigned, ongoing, completedToday, completedThisMonth },
+      kpis: { totalAssigned, ongoing, onHold, completedToday, completedThisMonth },
       activeTasks,
       urgentTask,
       technician: {
