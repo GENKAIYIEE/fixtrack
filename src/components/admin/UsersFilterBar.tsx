@@ -21,9 +21,11 @@ export default function UsersFilterBar({
 }: UsersFilterBarProps) {
   const [localSearch, setLocalSearch] = useState(search);
 
-  useEffect(() => {
+  const [prevSearch, setPrevSearch] = useState(search);
+  if (search !== prevSearch) {
+    setPrevSearch(search);
     setLocalSearch(search);
-  }, [search]);
+  }
 
   useEffect(() => {
     const handler = setTimeout(() => {

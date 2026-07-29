@@ -54,23 +54,25 @@ function generateSecurePassword(): string {
 }
 
 export default function UserForm({ mode, initialData, onSubmit, isSubmitting, onCancel }: UserFormProps) {
-  const [form, setForm] = useState<UserFormData>({ ...defaultForm, ...initialData });
+  const getInitialForm = () => {
+    const base = { ...defaultForm, ...initialData };
+    if (mode === 'create' && !base.password) {
+      base.password = generateSecurePassword();
+    }
+    return base;
+  };
+  const [form, setForm] = useState<UserFormData>(getInitialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormData, string>>>({});
-  const [showSpecialization, setShowSpecialization] = useState(false);
+  const [showSpecialization, setShowSpecialization] = useState(initialData?.role === 'TECHNICIAN');
 
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  if (initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
     if (initialData) {
       setForm((prev) => ({ ...prev, ...initialData }));
       setShowSpecialization(initialData.role === 'TECHNICIAN');
     }
-  }, [initialData]);
-
-  // Generate password on create mount
-  useEffect(() => {
-    if (mode === 'create') {
-      setForm((prev) => ({ ...prev, password: generateSecurePassword() }));
-    }
-  }, [mode]);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

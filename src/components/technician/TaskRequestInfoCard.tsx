@@ -112,7 +112,7 @@ export const TaskRequestInfoCard: React.FC<TaskRequestInfoCardProps> = ({ reques
           </span>
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-700 leading-relaxed italic">
-              "{request.description}"
+              &quot;{request.description}&quot;
             </p>
           </div>
         </div>

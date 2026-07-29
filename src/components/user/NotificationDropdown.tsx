@@ -33,9 +33,32 @@ export default function NotificationDropdown({ viewAllPath = '/user/notification
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    
+    let interval: NodeJS.Timeout | undefined;
+    const startPolling = () => {
+      interval = setInterval(fetchNotifications, 30000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+        startPolling();
+      } else if (interval) {
+        clearInterval(interval);
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startPolling();
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {

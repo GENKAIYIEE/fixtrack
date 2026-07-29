@@ -10,7 +10,9 @@ interface TimelineEvent {
   status?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface TaskActivityTimelineProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   task: any;
 }
 
