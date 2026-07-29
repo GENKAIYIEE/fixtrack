@@ -6,8 +6,31 @@
 }
 
 @media print {
+  @page {
+    margin: 1.5cm;
+  }
+  
+  /* Force overflow visible and reset heights to prevent scrollbars in print — exclude img */
+  *:not(img), html, body, main, div {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-width: none !important;
+  }
+
+  /* Constrain images so they don't blow up to full natural size */
+  img {
+    max-height: 80px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
   nav, header, .no-print { display: none !important; }
   .print-only { display: flex !important; }
-  main { margin-left: 0 !important; padding-top: 0 !important; }
-  body { background: white !important; }
+  main { margin-left: 0 !important; padding-top: 0 !important; margin: 0 !important; padding: 0 !important; }
+  body { 
+    background: white !important; 
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
+  }
 }
