@@ -105,14 +105,34 @@ export default function NotificationsInbox({
   }, []);
 
   useEffect(() => {
-    fetchNotifications(1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchNotifications(page);
     
-    // 30-second silent background poll for true real-time sync
-    const interval = setInterval(() => {
-      fetchNotifications(page, true);
-    }, 30000);
+    let interval: NodeJS.Timeout | undefined;
+    const startPolling = () => {
+      interval = setInterval(() => {
+        fetchNotifications(page, true);
+      }, 30000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications(page, true);
+        startPolling();
+      } else if (interval) {
+        clearInterval(interval);
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startPolling();
+    }
     
-    return () => clearInterval(interval);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchNotifications, page]);
 
   // ── Mark single as read ────────────────────────────────────────────────────

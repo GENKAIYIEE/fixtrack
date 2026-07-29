@@ -7,17 +7,17 @@ import RequestInfoCard from '@/components/admin/RequestInfoCard';
 import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
-import { RequestStatus } from '@prisma/client';
+import { RequestStatus, IssueType, UrgencyLevel, Building } from '@prisma/client';
 
 // Typed to match what /api/admin/requests/[id] actually returns
 interface RequestDetail {
   id: string;
   requestCode: string;
-  status: string;
-  urgencyLevel: string;
+  status: RequestStatus;
+  urgencyLevel: UrgencyLevel;
   priorityLevel: string;
-  issueType: string;
-  building: string;
+  issueType: IssueType;
+  building: Building;
   roomNumber: string;
   locationNotes?: string | null;
   description: string;
@@ -87,9 +87,9 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
       firstName: request.submitter?.firstName ?? 'Unknown',
       lastName:  request.submitter?.lastName  ?? '',
     },
-    issueType:     request.issueType     as any,
-    urgencyLevel:  request.urgencyLevel  as any,
-    building:      request.building      as any,
+    issueType:     request.issueType,
+    urgencyLevel:  request.urgencyLevel,
+    building:      request.building,
     roomNumber:    request.roomNumber,
     priorityLevel: request.priorityLevel,
   };
@@ -146,7 +146,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           </div>
         ) : (
           <RequestStatusStepper
-            status={request.status as RequestStatus}
+            status={request.status}
             hasRepairNote={!!request.repairNote}
           />
         )}

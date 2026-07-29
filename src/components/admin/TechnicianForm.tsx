@@ -47,11 +47,13 @@ export default function TechnicianForm({ mode, initialData, onSubmit, isSubmitti
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  if (initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
     if (initialData) {
       setForm((prev) => ({ ...prev, ...initialData }));
     }
-  }, [initialData]);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

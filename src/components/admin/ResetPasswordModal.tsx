@@ -22,14 +22,16 @@ export default function ResetPasswordModal({
   const [error, setError] = useState('');
 
   // Reset state when modal opens
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setPassword('');
       setConfirmPassword('');
       setShowPassword(false);
       setError('');
     }
-  }, [isOpen]);
+  }
 
   if (!isOpen || !user) return null;
 

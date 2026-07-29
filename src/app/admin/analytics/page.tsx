@@ -117,6 +117,16 @@ export default function AnalyticsPage() {
   const reportFilename = `FixTrack_Analytics_Report_${currentPeriod}_${currentDate}`;
 
   const handleExportPDF = () => {
+    // Data Volume Safeguard: Prevent browser print engine freezing on massive datasets.
+    // If the underlying dataset is enormous, intercept and suggest Excel instead.
+    if (analyticsData && analyticsData.kpis.totalRequests > 10000) {
+      setToast({ 
+        message: 'Data volume too large for PDF rendering. Please use Excel Export for large datasets.', 
+        type: 'error' 
+      });
+      return;
+    }
+
     const filename = reportFilename;
     const titleEl = document.head.querySelector('title');
     const originalTitle = document.title;

@@ -50,6 +50,7 @@ export default function NotificationSettings({ settings, onSave, isSaving, isAct
   const initialized = useRef(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     // Only initialize form data once to prevent data loss on cross-section saves
     if (Object.keys(settings).length > 0 && !initialized.current) {
       setFormData({
