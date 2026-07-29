@@ -88,10 +88,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { issueType, building, roomNumber, locationNotes, title, description, photos } = body;
+    const { issueType, building, roomNumber, locationNotes, description, photos } = body;
 
     // Server-side validation
-    const required = { issueType, building, roomNumber, title, description };
+    const required = { issueType, building, roomNumber, description };
     for (const [key, val] of Object.entries(required)) {
       if (!val?.toString().trim()) {
         return Response.json({ error: `${key} is required` }, { status: 400 });
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
           building: building as Building,
           roomNumber: roomNumber.trim(),
           locationNotes: locationNotes?.trim() || null,
-          description: `${title.trim()}\n\n${description.trim()}`,
+          description: description.trim(),
           status: 'PENDING',
           priorityLevel: 'NORMAL',
           photoUrl
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
             userId: admin.id,
             type: 'REQUEST_SUBMITTED' as NotifType,
             title: 'New Maintenance Request',
-            message: `${session.user.firstName || 'Student'} ${session.user.lastName || ''} submitted: "${title.trim()}" at ${building.replace(/_/g, ' ')}, ${roomNumber} (${requestCode})`,
+            message: `${session.user.firstName || 'Student'} ${session.user.lastName || ''} submitted a request at ${building.replace(/_/g, ' ')}, ${roomNumber} (${requestCode}): "${description.trim().substring(0, 80)}${description.trim().length > 80 ? '...' : ''}"`,
             requestId: req.id
           }))
         });

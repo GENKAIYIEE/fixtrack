@@ -63,6 +63,23 @@ function UrgencyBadge({ level }: { level: string }) {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  if (status === 'ON_HOLD') {
+    return (
+      <span className="bg-[#d97706]/10 text-[#d97706] border border-[#d97706]/20 rounded-full px-3 py-1.5 font-sidebar-label text-sidebar-label uppercase flex items-center gap-1.5">
+        <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>pause_circle</span>
+        On Hold
+      </span>
+    );
+  }
+  return (
+    <span className="bg-secondary-container text-white rounded-full px-3 py-1.5 font-sidebar-label text-sidebar-label uppercase flex items-center gap-1.5">
+      <span className="material-symbols-outlined" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>pending_actions</span>
+      {status}
+    </span>
+  );
+}
+
 function CardSkeleton() {
   return (
     <div className="col-span-12 lg:col-span-6 bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(30,58,138,0.06)] border border-surface-variant p-6 animate-pulse">
@@ -130,9 +147,7 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
                   </div>
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                     <UrgencyBadge level={task.priorityLevel || 'NORMAL'} />
-                    <span className="bg-secondary-container text-white rounded-full px-3 py-1.5 font-sidebar-label text-sidebar-label uppercase">
-                      {task.status}
-                    </span>
+                    <StatusBadge status={task.status} />
                   </div>
                 </div>
               </div>

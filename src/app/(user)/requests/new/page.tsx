@@ -18,7 +18,6 @@ function NewRequestContent() {
     building: buildingParam,
     roomNumber: roomParam,
     locationNotes: '',
-    title: '',
     description: ''
   });
   
@@ -80,7 +79,6 @@ function NewRequestContent() {
     if (!formData.issueType) e.issueType = 'Please select an issue type.';
     if (!formData.building) e.building = 'Please select a building.';
     if (!formData.roomNumber.trim()) e.roomNumber = 'Please enter the room or area.';
-    if (!formData.title.trim()) e.title = 'Please provide a brief title.';
     if (!formData.description.trim()) e.description = 'Please provide a detailed description.';
     return e;
   };
@@ -302,32 +300,13 @@ function NewRequestContent() {
             <h2 className={sectionHeaderClass}>Issue Description</h2>
             <div className="space-y-6">
               <div>
-                <label className={labelClass}>Brief Title *</label>
-                <input 
-                  type="text" 
-                  name="title" 
-                  value={formData.title} 
-                  onChange={handleChange} 
-                  placeholder="e.g. AC unit leaking water in ComLab" 
-                  maxLength={100} 
-                  className={inputClass('title')}
-                  data-error={!!errors.title}
-                />
-                {errors.title ? (
-                  <p className={errorClass}>{errors.title}</p>
-                ) : (
-                  <p className="font-body-sm text-outline text-xs mt-1">Write a short summary of the problem (max 100 characters)</p>
-                )}
-              </div>
-
-              <div>
                 <label className={labelClass}>Detailed Description *</label>
                 <textarea 
                   name="description" 
                   value={formData.description} 
                   onChange={handleChange} 
                   placeholder="Describe the issue in detail — when it started, how severe it is, what you observed, and any other relevant information..." 
-                  rows={5} 
+                  rows={6} 
                   maxLength={500} 
                   className={`resize-none ${inputClass('description')}`}
                   data-error={!!errors.description}

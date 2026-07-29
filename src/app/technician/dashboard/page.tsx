@@ -9,6 +9,7 @@ import ActiveTaskCards from '@/components/technician/ActiveTaskCards';
 type KpiData = {
   totalAssigned: number;
   ongoing: number;
+  onHold: number;
   completedToday: number;
   completedThisMonth: number;
 };
@@ -141,6 +142,7 @@ export default function TechnicianDashboardPage() {
           data?.kpis ?? {
             totalAssigned: 0,
             ongoing: 0,
+            onHold: 0,
             completedToday: 0,
             completedThisMonth: 0,
           }

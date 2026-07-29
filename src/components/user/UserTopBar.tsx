@@ -28,7 +28,7 @@ export default function UserTopBar({ user, onMenuClick }: { user: UserProps, onM
       {/* Right */}
       <div className="flex items-center gap-4">
         {/* Notifications dropdown */}
-        <NotificationDropdown />
+        <NotificationDropdown viewAllPath="/notifications" />
 
         {/* Help */}
         <button

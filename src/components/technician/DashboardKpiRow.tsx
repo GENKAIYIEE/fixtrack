@@ -3,6 +3,7 @@
 type KpiData = {
   totalAssigned: number;
   ongoing: number;
+  onHold: number;
   completedToday: number;
   completedThisMonth: number;
 };
@@ -23,7 +24,8 @@ const KpiSkeleton = () => (
 export default function DashboardKpiRow({ kpis, isLoading }: DashboardKpiRowProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        <KpiSkeleton />
         <KpiSkeleton />
         <KpiSkeleton />
         <KpiSkeleton />
@@ -48,6 +50,13 @@ export default function DashboardKpiRow({ kpis, isLoading }: DashboardKpiRowProp
       iconColor: 'text-secondary-container/20',
     },
     {
+      label: 'On Hold',
+      value: kpis.onHold,
+      icon: 'pause_circle',
+      borderColor: 'border-l-4 border-[#d97706]/40',
+      iconColor: 'text-[#d97706]/20',
+    },
+    {
       label: 'Completed Today',
       value: kpis.completedToday,
       icon: 'task_alt',
@@ -64,7 +73,7 @@ export default function DashboardKpiRow({ kpis, isLoading }: DashboardKpiRowProp
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
       {cards.map((card) => (
         <div
           key={card.label}
