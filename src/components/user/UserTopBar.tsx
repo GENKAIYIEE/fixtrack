@@ -30,13 +30,7 @@ export default function UserTopBar({ user, onMenuClick }: { user: UserProps, onM
         {/* Notifications dropdown */}
         <NotificationDropdown viewAllPath="/notifications" />
 
-        {/* Help */}
-        <button
-          className="hover:bg-slate-100 rounded-full p-2 transition-all text-slate-500"
-          aria-label="Help"
-        >
-          <span className="material-symbols-outlined">help_outline</span>
-        </button>
+
 
         {/* Divider */}
         <div className="h-6 w-px bg-slate-200" />
