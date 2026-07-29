@@ -97,6 +97,64 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { avatarUrl: true },
+    });
+
+    let finalAvatarUrl = avatarUrl;
+    if (avatarUrl && avatarUrl.startsWith('data:image')) {
+      if (avatarUrl.length > 7500000) {
+        return NextResponse.json({ error: 'Image exceeds 5MB limit' }, { status: 400 });
+      }
+
+      try {
+        const { supabaseAdmin } = await import('@/lib/supabase/admin');
+        const matches = avatarUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+
+          const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+          if (!allowedMimeTypes.includes(mimeType)) {
+            return NextResponse.json({ error: 'Invalid image format. Only JPG, PNG, and WEBP are allowed.' }, { status: 400 });
+          }
+
+          const buffer = Buffer.from(base64Data, 'base64');
+          const fileExt = mimeType.split('/')[1] || 'jpeg';
+          const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+          
+          if (currentUser?.avatarUrl && currentUser.avatarUrl.includes('/storage/v1/object/public/avatars/')) {
+            const oldFileName = currentUser.avatarUrl.split('/').pop();
+            if (oldFileName) {
+              await supabaseAdmin.storage.from('avatars').remove([oldFileName]);
+            }
+          }
+
+          const { error: uploadError } = await supabaseAdmin.storage
+            .from('avatars')
+            .upload(fileName, buffer, {
+              contentType: mimeType,
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('Supabase upload error:', uploadError);
+            return NextResponse.json({ error: 'Failed to upload avatar image' }, { status: 500 });
+          }
+
+          const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+
+          finalAvatarUrl = publicUrl;
+        }
+      } catch (err) {
+        console.error('Error processing avatar:', err);
+        return NextResponse.json({ error: 'Failed to process avatar image' }, { status: 500 });
+      }
+    }
 
     await prisma.user.update({
       where: { id: session.user.id },
@@ -106,7 +164,7 @@ export async function PATCH(request: Request) {
         email,
         contactNumber: contactNumber || null,
         specialization: specialization as Specialization,
-        ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(finalAvatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
       },
     });
 
