@@ -53,31 +53,6 @@ export default function AnalyticsKpiRow({ kpis }: { kpis: Kpis }) {
         </div>
       </div>
 
-      {/* Clean Corporate Form Layout (Only on Print) */}
-      <div className="hidden print:block mb-8 font-sans">
-        {/* Section Header */}
-        <div className="bg-[#1E3A8A] text-white font-bold text-sm px-3 py-1 mb-2 uppercase tracking-wide">
-          SECTION 1 - KEY PERFORMANCE INDICATORS
-        </div>
-        
-        {/* Data Table */}
-        <table className="w-full border-collapse text-sm border border-slate-300">
-          <tbody>
-            <tr>
-              <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Total Requests</td>
-              <td className="border border-slate-300 p-2 w-1/4 font-bold">{kpis.totalRequests}</td>
-              <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Avg Resolution Time</td>
-              <td className="border border-slate-300 p-2 w-1/4 font-bold">{kpis.avgResolutionTimeHours} Hrs</td>
-            </tr>
-            <tr>
-              <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Top Issue Category</td>
-              <td className="border border-slate-300 p-2 w-1/4 font-bold capitalize">{kpis.topIssueType.replace(/_/g, ' ').toLowerCase()}</td>
-              <td className="border border-slate-300 bg-slate-50 p-2 font-semibold w-1/4">Incident Count</td>
-              <td className="border border-slate-300 p-2 w-1/4 font-bold">{kpis.topIssueTypeCount}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </>
   );
 }
