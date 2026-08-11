@@ -191,7 +191,7 @@ export default function LoginClient({ initialPlatformName = 'FixTrack', initialL
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-label-md text-label-md text-on-surface block" htmlFor="password">Password</label>
-                <Link className="font-body-sm text-body-sm text-secondary hover:text-secondary-container transition-colors" href="#">Forgot password?</Link>
+                <Link className="font-body-sm text-body-sm text-secondary hover:text-secondary-container transition-colors" href="/forgot-password">Forgot password?</Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

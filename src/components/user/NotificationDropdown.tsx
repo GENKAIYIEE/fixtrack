@@ -21,7 +21,7 @@ export default function NotificationDropdown({ viewAllPath = '/notifications' }:
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications?limit=5');
+      const res = await fetch('/api/notifications?limit=3');
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
@@ -60,6 +60,13 @@ export default function NotificationDropdown({ viewAllPath = '/notifications' }:
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  // Re-fetch every time the dropdown is opened so deletions from "View All" are reflected immediately
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

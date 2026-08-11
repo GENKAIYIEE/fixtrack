@@ -19,6 +19,8 @@ model User {
   accountStatus       AccountStatus          @default(PENDING)
   avatarUrl           String?
   contactNumber       String?
+  resetOtp            String?
+  resetOtpExpiry      DateTime?
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
   auditLogs           AuditLog[]
