@@ -108,7 +108,7 @@ export default function UserDashboardPage() {
                 school
               </span>
               <span className="font-sidebar-label text-sidebar-label uppercase text-xs tracking-wider">
-                Student — {department}
+                {department}
               </span>
             </div>
           )}
