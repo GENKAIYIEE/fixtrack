@@ -146,7 +146,7 @@ export default function RequestInfoCard({ request, onRefresh, onReject }: Reques
             <div className="h-px w-full bg-surface-variant my-2" />
             <PhotoGallery
               photoUrl={request.photoUrl}
-              label="Student Photo Evidence"
+              label="Submitted Photo Evidence"
             />
           </div>
         </div>

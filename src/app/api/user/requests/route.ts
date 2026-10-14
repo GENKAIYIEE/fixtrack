@@ -195,7 +195,7 @@ export async function POST(request: Request) {
             changedById: session.user.id,
             previousStatus: null,
             newStatus: 'PENDING',
-            remarks: 'Request submitted by student'
+            remarks: 'Request submitted by user'
           }
         });
 
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
               userId: admin.id,
               type: 'REQUEST_SUBMITTED' as NotifType,
               title: 'New Maintenance Request',
-              message: `${session.user.firstName || 'Student'} ${session.user.lastName || ''} submitted a request at ${building.replace(/_/g, ' ')}, ${roomNumber} (${requestCode}): "${description.trim().substring(0, 80)}${description.trim().length > 80 ? '...' : ''}"`,
+              message: `${session.user.firstName || 'User'} ${session.user.lastName || ''} submitted a request at ${building.replace(/_/g, ' ')}, ${roomNumber} (${requestCode}): "${description.trim().substring(0, 80)}${description.trim().length > 80 ? '...' : ''}"`,
               requestId: req.id
             }))
           });
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
             action: 'REQUEST_SUBMITTED',
             affectedRecordId: req.id,
             affectedRecordType: 'MaintenanceRequest',
-            details: `Student submitted ${requestCode}: ${issueType} issue at ${building}, ${roomNumber}`
+            details: `User submitted ${requestCode}: ${issueType} issue at ${building}, ${roomNumber}`
           }
         });
 
