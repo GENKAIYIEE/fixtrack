@@ -44,7 +44,7 @@ export default function UsersTable({
         return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-surface-variant text-on-surface-variant border border-outline-variant">TECHNICIAN</span>;
 
       case 'STUDENT':
-        return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-tertiary-fixed text-on-tertiary-fixed">STUDENT</span>;
+        return null;
       default:
         return <span className="px-2 py-0.5 rounded text-xs font-semibold tracking-wide bg-surface-variant text-on-surface-variant">{role}</span>;
     }
@@ -132,12 +132,20 @@ export default function UsersTable({
                     {user.email}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col items-start gap-1">
-                      {renderRoleBadge(user.role)}
-                      <span className="text-xs text-outline group-hover:text-secondary">
-                        {user.department}
+                    {user.role === 'STUDENT' ? (
+                      <span className="text-sm font-medium text-on-surface group-hover:text-on-secondary-fixed">
+                        {user.department || '—'}
                       </span>
-                    </div>
+                    ) : (
+                      <div className="flex flex-col items-start gap-1">
+                        {renderRoleBadge(user.role)}
+                        {user.department && (
+                          <span className="text-xs text-outline group-hover:text-secondary">
+                            {user.department}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-on-surface-variant group-hover:text-on-secondary-fixed">
                     {user.idNumber}
