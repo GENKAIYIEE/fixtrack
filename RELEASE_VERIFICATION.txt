@@ -1,0 +1,9 @@
+FixTrack reports/ratings/storage release
+
+Exact baseline: fixtrack-redeployment-update.zip + fixtrack-merge-conflict-fix.zip.
+Full ZIP: project inside fixtrack/. Patch ZIP: changed/new paths at root.
+Both archives reopened, all members read for CRC and compared byte-for-byte to source.
+No private .env, real keys, uploaded ID/evidence, node_modules, build caches or test outputs.
+New migration: 20261025000000_request_worker_ratings, additive and transactional.
+Complete test results and live-environment limitations: REPORTS_RATINGS_STORAGE_TEST_REPORT.md.
+No live deployment, production migration, account reset or GitHub push performed.

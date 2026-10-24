@@ -10,6 +10,9 @@ export function portalForRole(role: string) {
 }
 function under(path: string, prefix: string) { return path === prefix || path.startsWith(prefix + '/'); }
 export function requiredRouteRole(path: string): 'ADMIN' | 'TECHNICIAN' | 'STUDENT' | null {
+  // Shared rating READ endpoint; its handler checks owner/admin/receiving-head access.
+  // POST independently requires the active requester. Do not exempt other request APIs.
+  if (/^\/api\/requests\/[a-zA-Z0-9_-]+\/ratings$/.test(path)) return null;
   if (under(path, '/api/admin') || under(path, '/admin') || under(path, '/api/users')) return 'ADMIN';
   if (under(path, '/api/technician') || under(path, '/technician') || under(path, '/api/tasks')) return 'TECHNICIAN';
   if (under(path, '/api/user') || under(path, '/api/requests') || ['/dashboard','/requests','/history','/profile','/notifications'].some(p => under(path,p))) return 'STUDENT';

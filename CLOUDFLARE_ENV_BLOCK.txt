@@ -1,0 +1,7 @@
+# Copy these lines into your PRIVATE .env/.env.local; do not commit real values.
+# On Vercel enter each variable in Project Settings → Environment Variables → Production.
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=PASTE_YOUR_CLOUDFLARE_TURNSTILE_SITE_KEY_HERE
+TURNSTILE_SECRET_KEY=PASTE_YOUR_CLOUDFLARE_TURNSTILE_SECRET_KEY_HERE
+TURNSTILE_ALLOWED_HOSTNAMES=fixtrack-theta.vercel.app
+# Replace/add hostname if your actual deployment uses another domain. No https:// or /.
+# Restart local dev after editing; redeploy Vercel after changing keys.

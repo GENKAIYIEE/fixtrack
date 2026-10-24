@@ -12,13 +12,14 @@
     "seed:technician": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed-technician-demo.ts",
     "typecheck": "tsc --noEmit",
     "db:validate": "prisma validate",
-    "test:unit": "tsx --test tests/unit.test.ts tests/registration-unit.test.ts tests/account-policy.test.ts tests/verification-unit.test.ts tests/workers-unit.test.ts tests/local-id-storage.test.ts tests/request-submission.test.ts tests/deployment-unit.test.ts",
+    "test:unit": "tsx --test tests/unit.test.ts tests/registration-unit.test.ts tests/account-policy.test.ts tests/verification-unit.test.ts tests/workers-unit.test.ts tests/local-id-storage.test.ts tests/request-submission.test.ts tests/deployment-unit.test.ts tests/reports-ratings-unit.test.ts",
     "test:workflow": "playwright test",
     "test": "npm run test:unit && npm run test:workflow",
     "test:migration": "tsx tests/migration-preservation.ts",
     "test:turnstile-provider": "tsx --test tests/turnstile-provider.test.ts",
     "release:check": "tsx scripts/check-production-config.ts",
-    "test:deployment": "tsx --test tests/deployment-unit.test.ts"
+    "test:deployment": "tsx --test tests/deployment-unit.test.ts",
+    "storage:setup": "tsx scripts/setup-private-id-storage.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"

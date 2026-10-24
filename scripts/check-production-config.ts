@@ -4,7 +4,7 @@ export function checkProductionConfig(env: Partial<NodeJS.ProcessEnv>): { errors
   const errors: string[] = [], warnings: string[] = [];
   const required = ['DATABASE_URL','DIRECT_URL','NEXTAUTH_URL','NEXTAUTH_SECRET','NEXT_PUBLIC_BASE_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','NEXT_PUBLIC_TURNSTILE_SITE_KEY','TURNSTILE_SECRET_KEY','TURNSTILE_ALLOWED_HOSTNAMES'];
   const value = (key: string) => env[key]?.trim() || '';
-  for (const key of required) if (!value(key) || /REPLACE_|YOUR_|\[REDACTED\]/i.test(value(key))) errors.push(`${key}: missing or still a placeholder.`);
+  for (const key of required) if (!value(key) || /REPLACE_|YOUR_|PASTE_|\[REDACTED\]/i.test(value(key))) errors.push(`${key}: missing or still a placeholder.`);
   const url = (key: string, protocols: string[]) => {
     if (!value(key)) return undefined;
     try {
@@ -26,7 +26,7 @@ export function checkProductionConfig(env: Partial<NodeJS.ProcessEnv>): { errors
   if (value('SUPABASE_SERVICE_ROLE_KEY') && value('SUPABASE_SERVICE_ROLE_KEY') === value('NEXT_PUBLIC_SUPABASE_ANON_KEY')) errors.push('Supabase server service-role and public anon keys must be different.');
   for (const [key, secret] of Object.entries(env)) {
     if (key.startsWith('NEXT_PUBLIC_') && /SERVICE_ROLE|DATABASE_URL|DIRECT_URL|TURNSTILE_SECRET|NEXTAUTH_SECRET|SMTP_PASS/.test(key) && secret) errors.push(`${key}: secret must not use a public variable name.`);
-    if (/^FIXTRACK_ALLOW_|^FIXTRACK_ACK_|^SEED_|^LEGACY_/.test(key) && secret && secret !== '0') errors.push(`${key}: unset test/setup/seed/recovery variables for production.`);
+    if (/^FIXTRACK_ALLOW_|^FIXTRACK_ACK_|^FIXTRACK_CONFIRM_|^SEED_|^LEGACY_/.test(key) && secret && secret !== '0') errors.push(`${key}: unset test/setup/seed/recovery variables for production.`);
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value('TECHNICIAN_HEAD_EMAIL') || 'tech@gmail.com')) errors.push('TECHNICIAN_HEAD_EMAIL: invalid email.');
   if (!value('SMTP_USER') || !value('SMTP_PASS')) warnings.push('SMTP credentials missing: existing password-reset email delivery will not work.');

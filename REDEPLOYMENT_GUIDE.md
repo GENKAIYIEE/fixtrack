@@ -1,6 +1,6 @@
 # Redeploy FixTrack to the SAME production URL
 
-This package is prepared/tested locally. It is NOT proof your live environment is ready and it does not guarantee zero errors. Do not deploy until every release gate below is satisfied. Nothing here automatically pushes code, runs production migrations, creates accounts or changes hosted storage.
+This package is prepared/tested locally. It is NOT proof your live environment is ready and it does not guarantee zero errors. Do not deploy until every release gate below is satisfied. Nothing here automatically pushes code, runs production migrations or creates accounts. In the latest update registration can create a missing private ID bucket after successful CAPTCHA; existing bucket privacy/policies/files are not changed.
 
 ## 1. Back up and identify the existing production services
 - Use the SAME Vercel project (and connected repository/production branch) and SAME hosted Supabase project as the existing live system. Do not create a replacement project or change its domain.
@@ -47,7 +47,7 @@ npm run release:check
 This is offline: it prints variable names/errors, not credentials, and neither connects nor migrates. PASS verifies format/consistency only, not whether keys work or storage/schema/accounts are ready. Never paste `.env`, connection strings, keys or passwords into chat, screenshots or Git.
 
 ## 4. Existing production database: STOP before blindly applying migrations
-This project contains **7 migrations**. The first six came from previous updates; the seventh, `20261024000000_server_only_tables`, enables RLS and removes anon/authenticated direct-table grants. It deletes no data and preserves existing server-side roles/account states. Prisma must connect as the trusted table owner/BYPASSRLS role. Check any custom integrations before revoking their browser-role table access; this FixTrack UI uses authorized server APIs, not public table access.
+This project now contains **8 migrations**. Migration eight, `20261025000000_request_worker_ratings`, adds separate request/worker scores with 1–5 checks and server-only access; see REPORTS_RATINGS_STORAGE_UPDATE.md. The first six came from previous updates; the seventh, `20261024000000_server_only_tables`, enables RLS and removes anon/authenticated direct-table grants. It deletes no data and preserves existing server-side roles/account states. Prisma must connect as the trusted table owner/BYPASSRLS role. Check any custom integrations before revoking their browser-role table access; this FixTrack UI uses authorized server APIs, not public table access.
 
 Your earlier `P3018: UserRole already exists` means the baseline was attempted against a populated database. Installing packages or generating Prisma Client does NOT apply schema changes. Do not repeat migrate deploy until the actual history/schema has been reconciled.
 

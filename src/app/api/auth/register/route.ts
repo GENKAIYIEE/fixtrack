@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import bcryptjs from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { verifyTurnstile, RegistrationError } from '@/lib/registration/turnstile';
+import { privateIdBucket } from '@/lib/registration/private-storage';
 import { registrationFields, registrationIdPhoto } from '@/lib/registration/validation';
 
 export const runtime = 'nodejs';
@@ -41,9 +42,7 @@ export async function POST(request: Request) {
     if (duplicate) throw new RegistrationError('An account with these details already exists.', 409);
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new RegistrationError('Registration storage is not configured. Contact the administrator.', 503);
     const { supabaseAdmin } = await import('@/lib/supabase/admin');
-    const bucket = supabaseAdmin.storage.from('registration-ids');
-    const { data: settings, error: bucketError } = await supabaseAdmin.storage.getBucket('registration-ids');
-    if (bucketError || !settings || settings.public !== false) throw new RegistrationError('Private ID storage is unavailable. Contact the administrator.', 503);
+    const bucket = await privateIdBucket(supabaseAdmin, true);
     const path = `${randomUUID()}/id.${photo.extension}`;
     let uploaded = false;
     const owned: { authId?: string } = {};

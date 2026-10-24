@@ -87,11 +87,11 @@ test('private bucket checks and failed uploads/auth creation leave no new accoun
   const users=await prisma.user.count(),objects=stub.objects.size,authUsers=stub.authUsers.size;
   const uploads=stub.state.uploads, authCreates=stub.state.authCreates;
   for (const flag of ['publicBucket','missingBucket','deniedBucket'] as const) {
-    stub.state[flag]=true;
+    stub.state[flag]=true;stub.state.failBucketCreate=true;
     try {
       const response=await anonymous.post('/api/auth/register',{multipart:form()});
-      expect(response.status()).toBe(503);expect((await response.json()).message).toContain('Private ID storage is unavailable');
-    } finally {stub.state[flag]=false;}
+      expect(response.status()).toBe(503);expect((await response.json()).message).toContain(flag === 'publicBucket' ? 'not private' : 'Private ID storage could not be reached');
+    } finally {stub.state[flag]=false;stub.state.failBucketCreate=false;}
   }
   expect(stub.state.uploads).toBe(uploads);expect(stub.state.authCreates).toBe(authCreates);
   stub.state.failUpload=true;try{expect((await anonymous.post('/api/auth/register',{multipart:form()})).status()).toBe(503);}finally{stub.state.failUpload=false;}

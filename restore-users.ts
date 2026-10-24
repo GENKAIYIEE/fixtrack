@@ -10,6 +10,8 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const restorePassword = process.env.LEGACY_RESTORE_PASSWORD;
+  if (!restorePassword) throw new Error('LEGACY_RESTORE_PASSWORD must be supplied explicitly. Do not run this recovery helper during an upgrade.');
   console.log('🌱 Restoring credentials...');
   
   const supabase = createClient(
@@ -17,7 +19,7 @@ async function main() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const hashedPassword = await bcrypt.hash('password123', 12);
+  const hashedPassword = await bcrypt.hash(restorePassword, 12);
 
   const usersToSeed = [
     {
@@ -67,7 +69,7 @@ async function main() {
       // Create if missing
       const { data: newSbUser, error: createErr } = await supabase.auth.admin.createUser({
         email: u.email,
-        password: 'password123',
+        password: restorePassword,
         email_confirm: true
       });
       if (createErr) {
@@ -100,7 +102,7 @@ async function main() {
       }
     });
 
-    console.log(`✅ Restored ${u.role}: ${dbUser.email} (password123)`);
+    console.log(`Restored ${u.role}: ${dbUser.email}`);
   }
 }
 

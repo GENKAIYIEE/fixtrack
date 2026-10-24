@@ -6,8 +6,11 @@ import DailyVolumeLineChart from '@/components/admin/DailyVolumeLineChart';
 import StatusDonutChart from '@/components/admin/StatusDonutChart';
 import BuildingsBarChart from '@/components/admin/BuildingsBarChart';
 import Toast from '@/components/shared/Toast';
+import RoomReportPanel, { type RoomReport, type RatingSummary } from '@/components/admin/RoomReportPanel';
 
 interface AnalyticsData {
+  roomReports: RoomReport[];
+  ratings: RatingSummary;
   kpis: {
     totalRequests: number;
     avgResolutionTimeHours: number;
@@ -28,6 +31,11 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const [reportTimestamp, setReportTimestamp] = useState<Date | null>(null);
+  useEffect(() => { setReportTimestamp(new Date()); }, []);
+  const [roomCategory, setRoomCategory] = useState('repaired');
+  const [roomSearch, setRoomSearch] = useState('');
+  const [appliedRoomSearch, setAppliedRoomSearch] = useState('');
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +44,7 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async (range: string, silent = false, signal?: AbortSignal) => {
     if (!silent) setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/analytics?range=${range}`, { signal });
+      const res = await fetch(`/api/admin/analytics?range=${range}&roomSearch=${encodeURIComponent(appliedRoomSearch)}`, { signal });
       if (!res.ok) throw new Error('Failed to fetch analytics');
       const data = await res.json();
       setAnalyticsData(data);
@@ -62,7 +70,7 @@ export default function AnalyticsPage() {
       clearInterval(timer);
       controller.abort();
     };
-  }, [timeRange]);
+  }, [timeRange, appliedRoomSearch]);
 
   const handleExportExcel = () => {
     if (!analyticsData) return;
@@ -98,6 +106,10 @@ export default function AnalyticsPage() {
       ...analyticsData.dailyVolume.map(d => `"${d.date}",${d.count}`)
     ];
 
+    const cell = (value: unknown) => { const text = String(value ?? ''); return `"${(/^\s*[=+@-]|^[\t\r\n]/.test(text) ? "'" : '') + text.replaceAll('"', '""')}"`; };
+    const roomReport = analyticsData.roomReports.find(r => r.key === roomCategory);
+    if (roomReport) rows.push('', cell(roomReport.label), '"Room / Work Location","Value","Unit"', ...roomReport.rows.map(r => [r.room,r.value,r.unit].map(cell).join(',')));
+    rows.push('', '"--- SEPARATE COMPLETION RATINGS ---"', '"Category","Average out of 5","Rating count"', ['Completed requests',analyticsData.ratings.requestAverage,analyticsData.ratings.requestCount].map(cell).join(','), ...analyticsData.ratings.workers.map(w=>[w.name,w.average,w.count].map(cell).join(',')));
     const csvContent = rows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -108,6 +120,7 @@ export default function AnalyticsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     setToast({ message: 'Exported to Excel successfully!', type: 'success' });
   };
@@ -226,9 +239,9 @@ export default function AnalyticsPage() {
 
         {/* Document Metadata Row */}
         <div className="flex justify-between text-xs mb-2">
-          <p><strong>Date Generated:</strong> {new Date().toLocaleDateString()}</p>
+          <p><strong>Date Generated:</strong> {reportTimestamp?.toLocaleDateString() || '—'}</p>
           <p className="capitalize"><strong>Reporting Period:</strong> {timeRange === 'week' ? 'This Week' : timeRange}</p>
-          <p><strong>Control No:</strong> {Math.floor(Date.now() / 1000).toString(16).toUpperCase()}</p>
+          <p><strong>Control No:</strong> {reportTimestamp ? Math.floor(reportTimestamp.getTime() / 1000).toString(16).toUpperCase() : '—'}</p>
         </div>
       </div>
 
@@ -263,6 +276,7 @@ export default function AnalyticsPage() {
           {/* Export Buttons */}
           <div className="flex gap-3">
             <button 
+              aria-label="Export PDF"
               onClick={handleExportPDF}
               className="flex items-center gap-2 bg-primary text-on-primary hover:bg-primary/90 rounded-lg px-4 py-2 transition-colors font-label-md shadow-sm"
             >
@@ -270,6 +284,7 @@ export default function AnalyticsPage() {
               Export PDF
             </button>
             <button 
+              aria-label="Export Excel"
               onClick={handleExportExcel}
               className="flex items-center gap-2 bg-surface hover:bg-surface-variant border border-outline-variant/50 text-on-surface rounded-lg px-4 py-2 transition-colors font-label-md shadow-sm"
             >
@@ -292,6 +307,7 @@ export default function AnalyticsPage() {
       ) : (
         <>
           <AnalyticsKpiRow kpis={analyticsData.kpis} />
+          <RoomReportPanel reports={analyticsData.roomReports} ratings={analyticsData.ratings} category={roomCategory} onCategory={setRoomCategory} search={roomSearch} onSearch={setRoomSearch} onSubmit={() => setAppliedRoomSearch(roomSearch.trim())} />
 
           {/* Visual Charts & Data (Hidden in Print) */}
           <div className="print:hidden">

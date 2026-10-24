@@ -1,4 +1,5 @@
 export type WorkerRecord = {
+  ratingAverage?: number | null; ratingCount?: number;
   id: string; name: string; contactNumber: string; specialization: string;
   isAvailable: boolean; isArchived: boolean; updatedAt: string;
   availability: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE' | 'ARCHIVED'; activeTaskCount: number;

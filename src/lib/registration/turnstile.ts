@@ -13,7 +13,7 @@ export async function verifyTurnstile(token: unknown, config: TurnstileConfig = 
   const secret = config.secret?.trim();
   const testKey = !!secret && TEST_SECRETS.has(secret);
   const hosts = (config.hostnames || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
-  if (!secret || (config.production && (testKey || !hosts.length))) throw new RegistrationError('Registration CAPTCHA is not configured. Please contact the administrator.', 503);
+  if (!secret || /^(PASTE_|YOUR_|REPLACE_)/i.test(secret) || (config.production && (testKey || !hosts.length))) throw new RegistrationError('Registration CAPTCHA is not configured. Please contact the administrator.', 503);
   if (testKey && token !== 'XXXX.DUMMY.TOKEN.XXXX') throw new RegistrationError('CAPTCHA verification failed. Complete a new CAPTCHA and try again.');
   let data: unknown;
   try {

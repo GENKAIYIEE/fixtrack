@@ -1,4 +1,5 @@
 'use client';
+import RequestRatings from '@/components/shared/RequestRatings';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -190,6 +191,7 @@ export default function TechnicianTaskDetailPage() {
       </div>
       
       <TaskWorkerSelector taskId={id} status={task.status} updatedAt={task.updatedAt} assignments={task.workerAssignments || []} onSaved={() => fetchTask(true)} />
+      {task.status === 'COMPLETED' && <RequestRatings requestId={id} key={`${id}-${task.status}`} />}
       {/* Activity Timeline Card */}
       <div className="w-full">
         <TaskActivityTimeline task={task} />

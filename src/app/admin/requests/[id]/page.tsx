@@ -1,4 +1,5 @@
 'use client';
+import RequestRatings from '@/components/shared/RequestRatings';
 
 import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -177,6 +178,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
             : 'This historical assignment is preserved. No account or assignment was automatically changed.'}</p>
         </section>}
         <RecordedWorkers assignments={request.workerAssignments || []} showHistory />
+        {request.status === 'COMPLETED' && <RequestRatings requestId={id} />}
         <ActivityLog statusHistory={request.statusHistory ?? []} />
       </div>
 

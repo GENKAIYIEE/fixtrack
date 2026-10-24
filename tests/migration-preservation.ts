@@ -47,6 +47,13 @@ async function main() {
     await db.query(readFileSync('prisma/migrations/20261022000400_optional_registration_id_number/migration.sql', 'utf8'));
     await db.query(readFileSync('prisma/migrations/20261023000000_worker_directory/migration.sql', 'utf8'));
     await db.query(readFileSync('prisma/migrations/20261024000000_server_only_tables/migration.sql', 'utf8'));
+    await db.query(`INSERT INTO "MaintenanceWorker" (id,name,"contactNumber","createdById","updatedAt") VALUES ('old-worker','Synthetic existing worker','09000000000','legacy-tech',NOW());
+      INSERT INTO "TaskWorkerAssignment" (id,"requestId","workerId","recordedById","workerName","contactNumber",specialization) VALUES ('old-worker-assignment','legacy-request','old-worker','legacy-tech','Original worker snapshot','09000000000','GENERAL');`);
+    const workerBefore = (await db.query('SELECT * FROM "MaintenanceWorker" ORDER BY id')).rows;
+    const assignmentBefore = (await db.query('SELECT * FROM "TaskWorkerAssignment" ORDER BY id')).rows;
+    await db.query(readFileSync('prisma/migrations/20261025000000_request_worker_ratings/migration.sql', 'utf8'));
+    assert.deepEqual((await db.query('SELECT * FROM "MaintenanceWorker" ORDER BY id')).rows,workerBefore);
+    assert.deepEqual((await db.query('SELECT * FROM "TaskWorkerAssignment" ORDER BY id')).rows,assignmentBefore);
     await db.query('COMMIT');
     for (const table of tables) {
       const after = (await db.query(`SELECT ${columns[table].map(c => `"${c}"`).join(',')} FROM "${table}" ORDER BY id`)).rows;
@@ -63,8 +70,8 @@ async function main() {
     }
     assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "User" WHERE "idNumber" IS NULL')).rows[0].total, 2);
     await assert.rejects(() => db.query('UPDATE "User" SET "idNumber"=$1 WHERE id=$2', ['legacy-1', 'no-number-1']));
-    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "MaintenanceWorker"')).rows[0].total, 0);
-    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "TaskWorkerAssignment"')).rows[0].total, 0);
+    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "MaintenanceWorker"')).rows[0].total, 1);
+    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "TaskWorkerAssignment"')).rows[0].total, 1);
     const secured = (await db.query("SELECT relname,relrowsecurity FROM pg_class WHERE relname IN ('MaintenanceWorker','TaskWorkerAssignment')")).rows;
     assert.equal(secured.length, 2); assert.ok(secured.every(row => row.relrowsecurity));
     assert.equal((await db.query("SELECT COUNT(*)::int AS total FROM pg_policies WHERE schemaname='public' AND tablename IN ('MaintenanceWorker','TaskWorkerAssignment')")).rows[0].total, 0);
@@ -73,11 +80,17 @@ async function main() {
     const readerRole=`fixtrack_test_reader_${Date.now()}`;
     await db.query(`CREATE ROLE "${readerRole}" NOLOGIN`);
     await db.query(`GRANT USAGE ON SCHEMA public TO "${readerRole}"`);
-    await db.query(`GRANT SELECT ON "User" TO "${readerRole}"`);
+    await db.query(`INSERT INTO "RequestRating" (id,"requestId","ratedById",score,"updatedAt") VALUES ('synthetic-rating','legacy-request','legacy-user',4,NOW());
+      INSERT INTO "WorkerRating" (id,"requestId","workerId","ratedById",score,"updatedAt") VALUES ('synthetic-worker-rating','legacy-request','old-worker','legacy-user',3,NOW());`);
+    await db.query(`GRANT SELECT ON "User", "RequestRating", "WorkerRating" TO "${readerRole}"`);
     await db.query('BEGIN');await db.query(`SET LOCAL ROLE "${readerRole}"`);
     assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM "User"')).rows[0].total,0);
+    const ratingTables = (await db.query("SELECT relname,relrowsecurity FROM pg_class WHERE relname IN ('RequestRating','WorkerRating')")).rows;
+    assert.equal(ratingTables.length,2); assert.ok(ratingTables.every(row=>row.relrowsecurity));
+    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM \"RequestRating\"')).rows[0].total,0);
+    assert.equal((await db.query('SELECT COUNT(*)::int AS total FROM \"WorkerRating\"')).rows[0].total,0);
     await db.query('COMMIT');
-    console.log('PASS: all original columns/rows across 8 models preserved; server-only RLS blocks an unprivileged reader even with SELECT granted.');
+    console.log('PASS: all original columns/rows across 8 models plus existing workers/assignments preserved; server-only RLS blocks an unprivileged reader even with SELECT granted.');
   } finally { await db.end(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1,3 +1,4 @@
+import { roomReports, ratingSummary } from '@/lib/analytics/room-reports';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveSession } from '@/lib/auth/access';
@@ -23,6 +24,8 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get('range') || 'month';
+    const roomSearch = (searchParams.get('roomSearch') || '').trim();
+    if (!['week','month','year'].includes(range) || roomSearch.length > 100) return NextResponse.json({ error: 'Invalid reporting filters.' }, { status: 400 });
 
     const now = new Date();
     let rangeStart = new Date();
@@ -164,7 +167,9 @@ export async function GET(request: NextRequest) {
       count: b._count._all
     }));
 
+    const [rooms, ratings] = await Promise.all([roomReports(rangeStart, now, roomSearch), ratingSummary(rangeStart, now)]);
     return NextResponse.json({
+      roomReports: rooms, ratings,
       kpis: {
         totalRequests,
         avgResolutionTimeHours,
@@ -174,7 +179,7 @@ export async function GET(request: NextRequest) {
       dailyVolume,
       statusBreakdown,
       buildingVolume
-    });
+    }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     console.error('Analytics API Error:', error);
     return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });

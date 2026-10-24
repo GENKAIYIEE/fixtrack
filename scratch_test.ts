@@ -8,7 +8,8 @@ async function runTests() {
   console.log('Testing Registration...');
   
   const uniqueEmail = `testuser_${Date.now()}@pclu.edu`;
-  const password = 'testpassword123';
+  const password = process.env.LEGACY_TEST_PASSWORD;
+  if (!password) throw new Error('Set LEGACY_TEST_PASSWORD explicitly before running this archived helper.');
 
   try {
     const regRes = await fetch('http://localhost:3000/api/auth/register', {

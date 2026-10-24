@@ -1,3 +1,9 @@
+## Latest update — room reports, independent five-star ratings and private ID storage
+
+Start with **REPORTS_RATINGS_STORAGE_UPDATE.md** and **REPORTS_RATINGS_STORAGE_TEST_REPORT.md**. This is the original Next.js/Supabase edition with the earlier merge fixes applied, not the PHP/InfinityFree edition.
+
+Adds migration **20261025000000_request_worker_ratings** (now **8 migrations** total). Apply it to the intended hosted database before deploying the updated code. Existing `.env` files, users, records and worker history must be kept. Clear Cloudflare placeholders are in `.env.example` and `CLOUDFLARE_ENV_BLOCK.txt`; real keys belong only in your private environment and Vercel settings. Previous test reports below are historical. No live deployment was performed.
+
 ## Redeployment preparation — read this first
 
 See **REDEPLOYMENT_GUIDE.md** for updating the SAME existing Vercel URL, separate hosted environment variables, real Turnstile keys, private ID/evidence storage, backups, staging, existing-database baseline reconciliation and smoke tests. **REDEPLOYMENT_TEST_REPORT.md** records actual local results and release gates. Node 24.x is selected. Security updates change package-lock.json: run `npm ci`.

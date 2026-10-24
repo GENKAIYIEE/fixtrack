@@ -1,4 +1,5 @@
 'use client';
+import RequestRatings from '@/components/shared/RequestRatings';
 
 import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -252,6 +253,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
+      {request.status === 'COMPLETED' && <RequestRatings requestId={id} />}
     </div>
   );
 }

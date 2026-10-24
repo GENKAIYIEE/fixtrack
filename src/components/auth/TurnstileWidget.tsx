@@ -23,7 +23,8 @@ function loadTurnstile(): Promise<TurnstileAPI> {
   return scriptPromise;
 }
 export default function TurnstileWidget({ onToken }: { onToken: (token: string) => void }) {
-  const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const configured = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const sitekey = configured && !/^(PASTE_|YOUR_|REPLACE_)/i.test(configured) ? configured : undefined;
   const container = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState('Loading CAPTCHA…');

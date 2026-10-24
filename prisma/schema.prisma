@@ -36,6 +36,8 @@ model User {
   assignmentsReceived RequestAssignment[]    @relation("AssignedTo")
   statusChanges       RequestStatusHistory[]
   updatedSettings     SystemSettings[]
+  requestRatings      RequestRating[]
+  workerRatings       WorkerRating[]
   createdWorkers      MaintenanceWorker[] @relation("WorkerCreator")
   recordedWorkers     TaskWorkerAssignment[] @relation("WorkerRecorder")
 }
@@ -80,6 +82,8 @@ model MaintenanceRequest {
 
   @@index([status])
   @@index([submittedById])
+  rating RequestRating?
+  workerRatings WorkerRating[]
   workerAssignments TaskWorkerAssignment[]
 
   @@index([assignedToId])
@@ -278,6 +282,7 @@ model MaintenanceWorker {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   creator User @relation("WorkerCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  ratings WorkerRating[]
   assignments TaskWorkerAssignment[]
   @@index([isArchived, name])
 }
@@ -298,4 +303,32 @@ model TaskWorkerAssignment {
   recorder User @relation("WorkerRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
   @@index([requestId, releasedAt])
   @@index([workerId, releasedAt])
+}
+
+// Only the active requester may rate a completed request. Worker scores are independent.
+model RequestRating {
+  id String @id @default(cuid())
+  requestId String @unique
+  ratedById String
+  score Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  ratedBy User @relation(fields: [ratedById], references: [id], onDelete: Restrict)
+  @@index([ratedById])
+}
+model WorkerRating {
+  id String @id @default(cuid())
+  requestId String
+  workerId String
+  ratedById String
+  score Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  worker MaintenanceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  ratedBy User @relation(fields: [ratedById], references: [id], onDelete: Restrict)
+  @@unique([requestId, workerId])
+  @@index([workerId])
+  @@index([ratedById])
 }

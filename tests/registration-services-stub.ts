@@ -7,13 +7,14 @@ export async function startRegistrationServicesStub() {
   if (process.env.NEXT_PUBLIC_SUPABASE_URL !== 'http://127.0.0.1:55433') throw new Error('Registration tests require the isolated localhost service stub.');
   const objects = new Map<string, { data: Buffer; type: string }>();
   const authUsers = new Map<string, { id: string; email: string }>();
-  const state = { uploads: 0, authCreates: 0, failUpload: false, failAuth: false, publicBucket: false, missingBucket: false, deniedBucket: false, nextAuthId: '', failAuthDelete: false };
+  const state = { bucketCreates: 0, failBucketCreate: false, uploads: 0, authCreates: 0, failUpload: false, failAuth: false, publicBucket: false, missingBucket: false, deniedBucket: false, nextAuthId: '', failAuthDelete: false };
   const server = createServer(async (request,response) => {
     const path = decodeURIComponent(new URL(request.url!, 'http://127.0.0.1:55433').pathname);
     const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
     const body = Buffer.concat(chunks);
     const json = (data: unknown, status = 200) => { response.writeHead(status, { 'Content-Type':'application/json' }); response.end(JSON.stringify(data)); };
     if (request.method === 'GET' && path === '/storage/v1/bucket/registration-ids') { if (state.missingBucket) { json({ statusCode:'404', message:'Not found', error:'not_found' },404); return; } if (state.deniedBucket) { json({ statusCode:'403', message:'Forbidden', error:'forbidden' },403); return; } json({ id:'registration-ids', name:'registration-ids', public:state.publicBucket }); return; }
+    if (request.method === 'POST' && path === '/storage/v1/bucket') { state.bucketCreates++; if(state.failBucketCreate){json({statusCode:'503',message:'Unavailable'},503);return;} const settings=JSON.parse(body.toString()); if(settings.id!=='registration-ids' || settings.public!==false){json({statusCode:'400',message:'Invalid'},400);return;} state.missingBucket=false;state.publicBucket=false;json({name:'registration-ids'});return; }
     const prefix = '/storage/v1/object/registration-ids/';
     if (request.method === 'POST' && path.startsWith(prefix)) {
       state.uploads++;
