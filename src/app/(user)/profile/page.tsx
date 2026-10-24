@@ -219,11 +219,6 @@ export default function UserProfilePage() {
                     <span className="material-symbols-outlined text-sm">badge</span>
                     {user.idNumber || 'Not provided'}
                   </span>
-                  <span className="hidden sm:block w-1 h-1 rounded-full bg-white/50"></span>
-                  <span className="text-white/80 text-sm sm:text-base font-medium tracking-wide flex items-center gap-1.5 capitalize">
-                    <span className="material-symbols-outlined text-sm">work</span>
-                    {user.role.toLowerCase()}
-                  </span>
                 </div>
                 
                 <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-full mt-3 sm:mt-4 self-start shadow-sm border border-white/10 transition-transform duration-300 cursor-default">
@@ -283,10 +278,10 @@ export default function UserProfilePage() {
               </div>
 
               <div className="group transition-colors duration-200 hover:bg-surface-container-low p-3 -mx-3 rounded-xl">
-                <label className="text-[11px] font-bold text-outline uppercase tracking-widest block mb-1.5">System Role</label>
-                <div className="text-on-surface font-semibold text-lg capitalize flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  {user.role.toLowerCase()}
+                <label className="text-[11px] font-bold text-outline uppercase tracking-widest block mb-1.5">ID Number</label>
+                <div className="text-on-surface font-semibold text-lg flex items-center gap-2">
+                  <span className="material-symbols-outlined text-outline text-lg">badge</span>
+                  {user.idNumber}
                 </div>
               </div>
             </div>

@@ -60,7 +60,7 @@ export default function UserDashboardPage() {
     type: 'success',
   });
 
-  const firstName = data?.student?.firstName ?? 'Student';
+  const firstName = data?.student?.firstName ?? '';
   const department = data?.student?.department ?? '';
 
   const fetchDashboardData = useCallback((isSilentPoll = false) => {
@@ -104,7 +104,7 @@ export default function UserDashboardPage() {
             >
               waving_hand
             </span>
-            Welcome back, {firstName}!
+            Welcome back{firstName ? `, ${firstName}` : ''}!
           </h1>
           {department && (
             <div className="inline-flex items-center gap-2 bg-primary-container text-on-primary-container px-3 py-1.5 rounded-full mt-2 self-start">
@@ -112,7 +112,7 @@ export default function UserDashboardPage() {
                 school
               </span>
               <span className="font-sidebar-label text-sidebar-label uppercase text-xs tracking-wider">
-                Student — {department}
+                {department}
               </span>
             </div>
           )}
