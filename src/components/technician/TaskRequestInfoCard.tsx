@@ -1,132 +1,16 @@
-import React from 'react';
-import { IssueType, UrgencyLevel } from '@prisma/client';
 import PhotoGallery from '@/components/shared/PhotoGallery';
-import { getBuildingLabel } from '@/lib/constants/buildings';
+import OfficialRequestDetails, { OfficialRequestDetailsData } from '@/components/shared/OfficialRequestDetails';
 
-interface TaskRequestInfoCardProps {
-  request: {
-    requestCode: string;
-    issueType: IssueType;
-    building: string;
-    roomNumber: string;
-    description: string;
-    urgencyLevel: UrgencyLevel;
-    photoUrl: string | null;
-    createdAt: string | Date;
-    submitter: {
-      firstName: string;
-      lastName: string;
-    };
-  };
-}
-
-export const TaskRequestInfoCard: React.FC<TaskRequestInfoCardProps> = ({ request }) => {
-  const getIssueTypeInfo = (type: IssueType) => {
-    switch (type) {
-      case 'HVAC':
-        return { icon: 'hvac', label: 'HVAC System Issue' };
-      case 'ELECTRICAL':
-        return { icon: 'bolt', label: 'Electrical Issue' };
-      case 'PLUMBING':
-        return { icon: 'water_drop', label: 'Plumbing Issue' };
-      case 'CARPENTRY':
-        return { icon: 'handyman', label: 'Carpentry Issue' };
-      case 'STRUCTURAL':
-        return { icon: 'foundation', label: 'Structural Issue' };
-      default:
-        return { icon: 'build', label: 'General Issue' };
-    }
-  };
-
-  const getUrgencyBadge = (urgency: UrgencyLevel) => {
-    switch (urgency) {
-      case 'URGENT':
-        return 'bg-error text-on-error';
-      case 'HIGH':
-        return 'bg-tertiary-container text-on-tertiary-container';
-      case 'NORMAL':
-      case 'LOW':
-        return 'bg-surface-container-high text-on-surface-variant border border-outline-variant';
-      default:
-        return 'bg-surface-container-high text-on-surface-variant border border-outline-variant';
-    }
-  };
-
-  const issueInfo = getIssueTypeInfo(request.issueType);
-  const urgencyBadge = getUrgencyBadge(request.urgencyLevel);
-
+export function TaskRequestInfoCard({ request }: {
+  request: OfficialRequestDetailsData & { requestCode: string; photoUrl: string | null };
+}) {
   return (
-    <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] border border-slate-100 overflow-hidden flex flex-col h-full">
-      <div className="bg-[#1E3A8A] px-6 py-4">
-        <h2 className="font-semibold text-white">Request Information</h2>
-      </div>
-
-      <div className="p-6 space-y-5 flex-1">
-        <div className="flex flex-col gap-1 border-b border-slate-100 pb-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            REQUESTER
-          </span>
-          <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-slate-400">person</span>
-            {request.submitter.firstName} {request.submitter.lastName}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1 border-b border-slate-100 pb-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            LOCATION
-          </span>
-          <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
-            {getBuildingLabel(request.building)}, {request.roomNumber}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1 border-b border-slate-100 pb-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            REPORTED ISSUE
-          </span>
-          <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-slate-400">{issueInfo.icon}</span>
-            {issueInfo.label}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1 border-b border-slate-100 pb-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            DATE SUBMITTED
-          </span>
-          <span className="text-sm font-medium text-slate-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-slate-400">calendar_today</span>
-            {request.createdAt ? new Date(request.createdAt).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric'
-            }) : 'Not available'}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            ORIGINAL DESCRIPTION
-          </span>
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-700 leading-relaxed italic">
-              &quot;{request.description}&quot;
-            </p>
-          </div>
-        </div>
-
-        {request.photoUrl && (
-          <>
-            <div className="h-px w-full bg-slate-100 my-2" />
-            <PhotoGallery
-              photoUrl={request.photoUrl}
-              label="Submitted Photo Evidence"
-            />
-          </>
-        )}
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-blue-900 px-6 py-4 font-semibold text-white">Request Information</div>
+      <div className="space-y-6 p-6">
+        <OfficialRequestDetails request={request} />
+        {request.photoUrl && <PhotoGallery photoUrl={request.photoUrl} label="Previously Submitted Photos" />}
       </div>
     </div>
   );
-};
+}

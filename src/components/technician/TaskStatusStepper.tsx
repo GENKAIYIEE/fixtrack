@@ -22,7 +22,7 @@ export const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ status }) 
   ];
 
   return (
-    <div className="flex items-center">
+    <div className="grid grid-cols-4 items-start gap-2 sm:flex sm:items-center sm:gap-0">
       {steps.map((step, index) => {
         const isCompleted = activeStep > step.num || (activeStep === 4 && step.num === 4);
         const isActive = activeStep === step.num && !isCompleted;
@@ -30,7 +30,7 @@ export const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ status }) 
 
         return (
           <React.Fragment key={step.num}>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-col items-center gap-1 sm:flex-row sm:gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   isCompleted
@@ -47,7 +47,7 @@ export const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ status }) 
                 )}
               </div>
               <span
-                className={`text-sm ${
+                className={`text-[10px] sm:text-sm ${
                   isActive ? 'font-bold text-slate-800' : 'font-medium text-slate-500'
                 }`}
               >
@@ -56,7 +56,7 @@ export const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ status }) 
             </div>
 
             {index < steps.length - 1 && (
-              <div className="h-px w-10 mx-3 bg-slate-200" />
+              <div className="hidden h-px w-6 mx-2 shrink-0 bg-slate-200 sm:block" />
             )}
           </React.Fragment>
         );

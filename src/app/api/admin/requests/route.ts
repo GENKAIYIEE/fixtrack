@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import { isActiveAdmin, relayRequests, workflowErrorResponse, technicianHeadEmail } from '@/lib/requests/assignment';
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
 async function verifyAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getActiveSession(['ADMIN']);
   const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
 
-  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
+  if (authUser.role !== 'ADMIN' || !await isActiveAdmin(authUser.id)) return { error: 'Forbidden', status: 403 as const };
 
   return { userId: authUser.id };
 }
@@ -44,10 +44,11 @@ export async function GET(request: NextRequest) {
   const where: Prisma.MaintenanceRequestWhereInput = {};
 
   if (status) where.status = status as Prisma.EnumRequestStatusFilter;
-  if (priority) where.priorityLevel = priority as Prisma.EnumPriorityLevelFilter;
-  if (building) where.building = building as Prisma.EnumBuildingFilter;
+  if (priority && !['HIGH', 'MEDIUM', 'LOW'].includes(priority)) return NextResponse.json({ error: 'Invalid requested priority' }, { status: 400 });
+  if (priority) where.requestedPriority = priority as Prisma.EnumRequestedPriorityNullableFilter;
+  if (building) where.building = building as Prisma.EnumBuildingNullableFilter;
   if (assignedTo) where.assignedToId = assignedTo;
-  if (issueType) where.issueType = issueType as Prisma.EnumIssueTypeFilter;
+  if (issueType) where.issueType = issueType as Prisma.EnumIssueTypeNullableFilter;
 
   if (dateFrom || dateTo) {
     where.createdAt = {};
@@ -63,6 +64,8 @@ export async function GET(request: NextRequest) {
     where.OR = [
       { requestCode: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
+      { workLocation: { contains: search, mode: 'insensitive' } },
+      { requestingParty: { contains: search, mode: 'insensitive' } },
       {
         submitter: {
           OR: [
@@ -86,7 +89,7 @@ export async function GET(request: NextRequest) {
             select: { firstName: true, lastName: true },
           },
           assignee: {
-            select: { firstName: true, lastName: true },
+            select: { firstName: true, lastName: true, email: true },
           },
           assigner: {
             select: { firstName: true, lastName: true },
@@ -97,7 +100,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      requests,
+      requests: requests.map(row => ({ ...row, assignedToDesignatedHead: row.assignee ? row.assignee.email.toLowerCase() === technicianHeadEmail() : null })),
       total,
       page,
       limit,
@@ -113,119 +116,13 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const auth = await verifyAdmin();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
-  let body: unknown;
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+  if (!body || body.action !== 'bulkAssign') return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { action, requestIds, technicianId } = body as {
-    action: string;
-    requestIds: string[];
-    technicianId: string;
-  };
-
-  if (action !== 'bulkAssign') {
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  }
-
-  if (!Array.isArray(requestIds) || requestIds.length === 0) {
-    return NextResponse.json({ error: 'requestIds must be a non-empty array' }, { status: 400 });
-  }
-
-  if (!technicianId) {
-    return NextResponse.json({ error: 'technicianId is required' }, { status: 400 });
-  }
-
-  try {
-    const now = new Date();
-
-    // Fetch the target requests to get requestCode and current status for history/logs
-    const targetRequests = await prisma.maintenanceRequest.findMany({
-      where: { id: { in: requestIds } },
-      select: { id: true, requestCode: true, status: true, assignedToId: true },
-    });
-
-    // Strictly filter out any requests that are not APPROVED or are already assigned
-    const validRequests = targetRequests.filter(req => req.status === 'APPROVED' && !req.assignedToId);
-
-    if (validRequests.length === 0) {
-      return NextResponse.json({ 
-        error: 'None of the selected requests are eligible for assignment. They must be APPROVED and unassigned.' 
-      }, { status: 400 });
-    }
-
-    const validRequestIds = validRequests.map(r => r.id);
-
-    // Update ONLY valid requests
-    await prisma.maintenanceRequest.updateMany({
-      where: { id: { in: validRequestIds } },
-      data: {
-        assignedToId: technicianId,
-        assignedById: auth.userId,
-        assignedAt: now,
-        status: 'ONGOING',
-      },
-    });
-
-    // Create RequestAssignment records for each
-    await prisma.requestAssignment.createMany({
-      data: validRequestIds.map((requestId) => ({
-        requestId,
-        assignedToId: technicianId,
-        assignedById: auth.userId,
-        assignedAt: now,
-        isActive: true,
-      })),
-      skipDuplicates: true,
-    });
-
-    // FIXED: BUG-13 — Add missing StatusHistory, AuditLog, and Notifications
-    // that the single-assign flow creates but the bulk path was silently skipping.
-    for (const req of validRequests) {
-      // Status history entry per request
-      await prisma.requestStatusHistory.create({
-        data: {
-          requestId: req.id,
-          changedById: auth.userId,
-          previousStatus: req.status,
-          newStatus: 'ONGOING',
-          remarks: `Bulk assigned to technician ${technicianId}`,
-        },
-      });
-
-      // Audit log entry per request
-      await prisma.auditLog.create({
-        data: {
-          userId: auth.userId,
-          action: 'TASK_ASSIGNED',
-          affectedRecordId: req.requestCode,
-          affectedRecordType: 'MaintenanceRequest',
-          details: `Bulk assignment: ${req.requestCode} assigned to technician ${technicianId}`,
-        },
-      });
-
-      // Notification for the assigned technician
-      await prisma.notification.create({
-        data: {
-          userId: technicianId,
-          type: 'TASK_ASSIGNED',
-          title: 'New Task Assigned',
-          message: `${req.requestCode} has been assigned to you via bulk assignment.`,
-          requestId: req.id,
-        },
-      });
-    }
-
-    return NextResponse.json({ success: true, updated: validRequestIds.length });
-  } catch (error) {
-    console.error('[PATCH /api/admin/requests]', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+    const result = await relayRequests(auth.userId, body.requestIds, body.technicianId);
+    return NextResponse.json({ success: true, ...result });
+  } catch (error) { return workflowErrorResponse(error); }
 }
-

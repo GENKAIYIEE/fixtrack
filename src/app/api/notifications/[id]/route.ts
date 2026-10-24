@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 
 export async function DELETE(
@@ -8,7 +7,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession();
     const user = session?.user;
 
     if (!user) {

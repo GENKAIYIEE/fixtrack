@@ -4,6 +4,7 @@ import React from 'react';
 
 export interface TechnicianData {
   id: string;
+  email?: string;
   firstName: string;
   lastName: string;
   specialization: string | null;

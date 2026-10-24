@@ -8,7 +8,7 @@ export interface UserRow {
   firstName: string;
   lastName: string;
   email: string;
-  idNumber: string;
+  idNumber: string | null;
   department: string;
   role: string;
   specialization: string | null;
@@ -56,6 +56,8 @@ export default function UsersTable({
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-fixed text-on-secondary-fixed border border-secondary/20">Active</span>;
       case 'PENDING':
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-tertiary-container text-on-tertiary-container border border-tertiary/20">Pending</span>;
+      case 'REJECTED':
+        return <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">Rejected</span>;
       case 'INACTIVE':
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-variant text-on-surface-variant border border-outline-variant">Inactive</span>;
       default:
@@ -70,8 +72,7 @@ export default function UsersTable({
             <tr className="bg-primary-container text-on-primary font-table-header text-table-header">
               <th className="px-6 py-4 font-semibold text-sm">User</th>
               <th className="px-6 py-4 font-semibold text-sm">Contact</th>
-              <th className="px-6 py-4 font-semibold text-sm">Role & Dept</th>
-              <th className="px-6 py-4 font-semibold text-sm">ID Number</th>
+              <th className="px-6 py-4 font-semibold text-sm text-center">Role &amp; Dept</th>
               <th className="px-6 py-4 font-semibold text-sm">Status</th>
               <th className="px-6 py-4 font-semibold text-sm">Registered</th>
               <th className="px-6 py-4 font-semibold text-sm text-right">Actions</th>
@@ -90,7 +91,6 @@ export default function UsersTable({
                   </td>
                   <td className="px-6 py-4"><div className="h-3 bg-surface-container-high rounded w-32" /></td>
                   <td className="px-6 py-4"><div className="h-3 bg-surface-container-high rounded w-20" /></td>
-                  <td className="px-6 py-4"><div className="h-3 bg-surface-container-high rounded w-16" /></td>
                   <td className="px-6 py-4"><div className="h-5 bg-surface-container-high rounded-full w-16" /></td>
                   <td className="px-6 py-4"><div className="h-3 bg-surface-container-high rounded w-24" /></td>
                   <td className="px-6 py-4"></td>
@@ -98,7 +98,7 @@ export default function UsersTable({
               ))
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-on-surface-variant">
+                <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">
                   No users found matching the current filters.
                 </td>
               </tr>
@@ -132,15 +132,12 @@ export default function UsersTable({
                     {user.email}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col items-start gap-1">
+                    <div className="flex flex-col items-center gap-1 text-center">
                       {renderRoleBadge(user.role)}
                       <span className="text-xs text-outline group-hover:text-secondary">
                         {user.department}
                       </span>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs text-on-surface-variant group-hover:text-on-secondary-fixed">
-                    {user.idNumber}
                   </td>
                   <td className="px-6 py-4">
                     {renderStatusPill(user.accountStatus)}
@@ -158,6 +155,7 @@ export default function UsersTable({
                         <span className="material-symbols-outlined text-[20px]">edit</span>
                       </button>
                       <button
+                        disabled={user.accountStatus === 'PENDING' || user.accountStatus === 'REJECTED'}
                         onClick={() => onDeactivate(user)}
                         className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
                           user.accountStatus === 'INACTIVE'

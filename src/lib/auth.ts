@@ -23,9 +23,6 @@ export const authOptions: NextAuthOptions = {
 
           if (!user) return null
 
-          // Block login for any account that is not explicitly ACTIVE.
-          // This catches both INACTIVE (deactivated) and PENDING (unverified) accounts.
-          if (user.accountStatus !== 'ACTIVE') return null
 
           const isPasswordValid = await bcryptjs.compare(
             credentials.password as string,
@@ -33,6 +30,10 @@ export const authOptions: NextAuthOptions = {
           )
 
           if (!isPasswordValid) return null
+          // Reveal state only after valid credentials; no pending/rejected session is issued.
+          if (user.accountStatus === 'PENDING') throw new Error('ACCOUNT_PENDING')
+          if (user.accountStatus === 'REJECTED') throw new Error(`ACCOUNT_REJECTED:${encodeURIComponent(user.verificationRejectionReason || '')}`)
+          if (user.accountStatus !== 'ACTIVE') throw new Error('ACCOUNT_NOT_APPROVED')
 
           return {
             id: user.id,
@@ -44,7 +45,8 @@ export const authOptions: NextAuthOptions = {
             accountStatus: user.accountStatus
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          if (error instanceof Error && (['ACCOUNT_PENDING', 'ACCOUNT_NOT_APPROVED'].includes(error.message) || error.message.startsWith('ACCOUNT_REJECTED:'))) throw error
+          console.error('Authentication could not be completed.')
           return null
         }
       }

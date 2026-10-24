@@ -6,6 +6,7 @@ import { TaskStatusStepper } from '@/components/technician/TaskStatusStepper';
 import { TaskRequestInfoCard } from '@/components/technician/TaskRequestInfoCard';
 import { TaskExecutionCard } from '@/components/technician/TaskExecutionCard';
 import { TaskActivityTimeline } from '@/components/technician/TaskActivityTimeline';
+import TaskWorkerSelector from '@/components/technician/TaskWorkerSelector';
 import ToastNotification from '@/components/shared/ToastNotification';
 
 export default function TechnicianTaskDetailPage() {
@@ -30,13 +31,13 @@ export default function TechnicianTaskDetailPage() {
     if (!isSilentPoll) setIsLoading(true);
     try {
       const res = await fetch(`/api/technician/tasks/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch task');
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to fetch task');
       const data = await res.json();
       setTask(data);
       router.refresh();
     } catch (error) {
       console.error(error);
-      if (!isSilentPoll) showToast('A network error occurred while fetching the task.', 'error');
+      if (!isSilentPoll) showToast(error instanceof Error ? error.message : 'Could not fetch the task.', 'error');
     } finally {
       if (!isSilentPoll) setIsLoading(false);
     }
@@ -80,7 +81,7 @@ export default function TechnicianTaskDetailPage() {
       await fetchTask();
     } catch (error) {
       console.error(error);
-      showToast('Failed to update task', 'error');
+      showToast(error instanceof Error ? error.message : 'Failed to update task', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -89,16 +90,17 @@ export default function TechnicianTaskDetailPage() {
   const handleMarkCompleted = async () => {
     setIsCompleting(true);
     try {
-      await fetch(`/api/technician/tasks/${id}`, {
+      const response = await fetch(`/api/technician/tasks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'complete' }),
       });
+      if (!response.ok) throw new Error((await response.json()).error || 'Completion failed.');
       showToast('Task marked as completed', 'success');
       await fetchTask();
     } catch (error) {
       console.error(error);
-      showToast('Failed to complete task', 'error');
+      showToast(error instanceof Error ? error.message : 'Failed to complete task', 'error');
     } finally {
       setIsCompleting(false);
     }
@@ -145,7 +147,7 @@ export default function TechnicianTaskDetailPage() {
   return (
     <div className="pb-24 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-6">
+      <div className="flex flex-col flex-wrap xl:flex-row justify-between items-start lg:items-center mb-6 gap-6">
         <div>
           <div className="flex items-center gap-4 mb-1">
             <button
@@ -154,7 +156,7 @@ export default function TechnicianTaskDetailPage() {
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 className="font-h2 text-h2 text-on-surface font-bold flex items-center gap-3">
+            <h1 className="font-h2 text-h2 text-on-surface font-bold flex min-w-0 flex-wrap items-center gap-3">
               Task Detail — {task.requestCode}
               <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadge(task.priorityLevel || 'NORMAL')}`}>
                 {task.priorityLevel || 'NORMAL'}
@@ -165,11 +167,12 @@ export default function TechnicianTaskDetailPage() {
             Review and update maintenance execution.
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.08)] p-4">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl bg-white p-4 shadow-[0_4px_12px_rgba(30,58,138,0.08)] sm:w-fit">
           <TaskStatusStepper status={task.status} />
         </div>
       </div>
 
+      <p className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Technician head: contact the appropriate maintenance worker by phone or in person. Record progress and completion in FixTrack; individual workers do not need accounts.</p>
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="h-full">
@@ -186,6 +189,7 @@ export default function TechnicianTaskDetailPage() {
         </div>
       </div>
       
+      <TaskWorkerSelector taskId={id} status={task.status} updatedAt={task.updatedAt} assignments={task.workerAssignments || []} onSaved={() => fetchTask(true)} />
       {/* Activity Timeline Card */}
       <div className="w-full">
         <TaskActivityTimeline task={task} />

@@ -24,7 +24,7 @@ export const BUILDING_AREAS: Record<string, string[]> = {
   ]
 };
 
-export const getBuildingLabel = (value: string): string => {
+export const getBuildingLabel = (value: string | null | undefined): string => {
   const building = BUILDINGS.find(b => b.value === value);
-  return building?.label || value;
+  return building?.label || value || 'Not classified (official form)';
 };

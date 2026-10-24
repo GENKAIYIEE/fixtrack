@@ -1,4 +1,5 @@
 'use client';
+import { getWorkLocation } from '@/lib/requests/display';
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,10 +39,6 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
     }
   };
 
-  const formatBuilding = (building?: string) => {
-    if (!building) return '';
-    return building.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   const getDisplayLabel = (req: Partial<MaintenanceRequest>) => {
     if (req.status === 'COMPLETED') return 'Completed';
@@ -89,8 +86,8 @@ export default function LiveRequestsTable({ requests, onView }: LiveRequestsTabl
                 <tr key={req.id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F1F5F9]'} hover:bg-[#DBEAFE] transition-colors group`}>
                   <td className="px-6 py-4 font-semibold text-slate-900 truncate" title={req.requestCode || ''}>{req.requestCode}</td>
                   <td className="px-6 py-4 truncate" title={req.description || ''}>{req.description}</td>
-                  <td className="px-6 py-4 truncate" title={`${formatBuilding(req.building)} - Rm ${req.roomNumber}`}>
-                    {formatBuilding(req.building)} - Rm {req.roomNumber}
+                  <td className="px-6 py-4 truncate" title={getWorkLocation(req)}>
+                    {getWorkLocation(req)}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${labelClasses}`}>

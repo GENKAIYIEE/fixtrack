@@ -1,263 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-
-async function verifyAdmin() {
-  const session = await getServerSession(authOptions);
-  const authUser = session?.user;
-
-  if (!authUser) return { error: 'Unauthorized', status: 401 as const };
-  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
-
-  return { userId: authUser.id };
-}
+import { getActiveSession } from '@/lib/auth/access';
+import prisma from '@/lib/prisma';
+import { currentWorkerInclude } from '@/lib/workers/service';
+import { isActiveAdmin, getTechnicianHead, relayRequests, workflowErrorResponse, technicianHeadEmail } from '@/lib/requests/assignment';
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type');
-
+  const session = await getActiveSession(['ADMIN']);
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN' || !await isActiveAdmin(session.user.id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
-    // ── Unassigned (APPROVED + no assignee) requests ──────────────────────────
+    const type = request.nextUrl.searchParams.get('type');
+    if (type === 'approved') {
+      const page = Number(request.nextUrl.searchParams.get('page') || 1);
+      const limit = Number(request.nextUrl.searchParams.get('limit') || 10);
+      if (!Number.isInteger(page) || page < 1 || page > 100000 || !Number.isInteger(limit) || limit < 1 || limit > 50) return NextResponse.json({ error: 'Invalid page.' }, { status: 400 });
+      const where = { status: { in: ['APPROVED', 'ONGOING', 'ON_HOLD', 'COMPLETED'] as ('APPROVED' | 'ONGOING' | 'ON_HOLD' | 'COMPLETED')[] } };
+      const [requests, total] = await Promise.all([
+        prisma.maintenanceRequest.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+          include: { submitter: { select: { firstName: true, lastName: true } }, assignee: { select: { firstName: true, lastName: true, email: true } }, workerAssignments: currentWorkerInclude } }),
+        prisma.maintenanceRequest.count({ where }),
+      ]);
+      return NextResponse.json({ requests: requests.map(row => ({ ...row, assignedToDesignatedHead: row.assignee ? row.assignee.email.toLowerCase() === technicianHeadEmail() : false })), total, page, totalPages: Math.max(1, Math.ceil(total / limit)) }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     if (type === 'unassigned') {
       const requests = await prisma.maintenanceRequest.findMany({
-        where: {
-          status: 'APPROVED',
-          assignedToId: null,
-        },
-        take: 200, // Safety limit to prevent memory exhaustion
-        include: {
-          submitter: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { createdAt: 'asc' },
+        where: { status: 'APPROVED', assignedToId: null }, take: 200,
+        include: { submitter: { select: { firstName: true, lastName: true } } }, orderBy: { createdAt: 'asc' },
       });
-
-      // Sort by priority/urgency descending, then by age ascending (FIFO within same priority)
-      const priorityMap: Record<string, number> = {
-        URGENT: 4,
-        HIGH: 3,
-        NORMAL: 2,
-        LOW: 1,
-      };
-
-      requests.sort((a, b) => {
-        const pA = priorityMap[a.priorityLevel] ?? priorityMap[a.urgencyLevel] ?? 0;
-        const pB = priorityMap[b.priorityLevel] ?? priorityMap[b.urgencyLevel] ?? 0;
-        if (pA !== pB) return pB - pA;
-        return a.createdAt.getTime() - b.createdAt.getTime();
-      });
-
+      const rank: Record<string, number> = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 };
+      requests.sort((a, b) => rank[b.priorityLevel] - rank[a.priorityLevel] || a.createdAt.getTime() - b.createdAt.getTime());
       return NextResponse.json({ requests });
     }
-
-    // ── Active technicians with real-time workload ────────────────────────────
     if (type === 'technicians') {
-      const technicians = await prisma.user.findMany({
-        where: {
-          role: 'TECHNICIAN',
-          accountStatus: 'ACTIVE',
-        },
-        take: 1000, // Safety limit for high-volume orgs
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          specialization: true,
-          avatarUrl: true,
-          department: true,
-          // FIX: Count ONGOING requests directly assigned to the technician
-          // instead of using assignmentsReceived (which counts history entries,
-          // not current active tasks). This gives the true real-time workload.
-          assignedRequests: {
-            where: {
-              status: 'ONGOING',
-            },
-            select: { id: true },
-          },
-        },
-        orderBy: { firstName: 'asc' },
+      const head = await getTechnicianHead();
+      const activeTaskCount = await prisma.maintenanceRequest.count({
+        where: { assignedToId: head.id, status: { in: ['ONGOING', 'ON_HOLD'] } },
       });
-
-      const formatted = technicians.map((tech) => ({
-        id: tech.id,
-        firstName: tech.firstName,
-        lastName: tech.lastName,
-        specialization: tech.specialization,
-        avatarUrl: tech.avatarUrl ?? null,
-        department: tech.department ?? null,
-        // FIX: Use the actual count of ONGOING maintenance requests assigned to
-        // this technician — NOT a hardcoded name-based filter.
-        activeTaskCount: tech.assignedRequests.length,
-      }));
-
-      return NextResponse.json({ technicians: formatted });
+      return NextResponse.json({ technicians: [{ ...head, activeTaskCount }] });
     }
-
-    return NextResponse.json({ error: 'Invalid type parameter. Use ?type=unassigned or ?type=technicians' }, { status: 400 });
-
-  } catch (error) {
-    console.error('[GET /api/admin/assignments]', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+    return NextResponse.json({ error: 'Use ?type=unassigned, ?type=technicians or ?type=approved' }, { status: 400 });
+  } catch (error) { return workflowErrorResponse(error); }
 }
-
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
-
-  let body: any;
+  const session = await getActiveSession(['ADMIN']);
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN' || !await isActiveAdmin(session.user.id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { requestId, technicianId } = body;
-  if (!requestId || !technicianId) {
-    return NextResponse.json({ error: 'Missing required fields: requestId and technicianId' }, { status: 400 });
-  }
-
-  try {
-    // ── Validate the maintenance request ────────────────────────────────────
-    const maintenanceReq = await prisma.maintenanceRequest.findUnique({
-      where: { id: requestId },
-    });
-
-    if (!maintenanceReq) {
-      return NextResponse.json({ error: 'Maintenance request not found.' }, { status: 404 });
-    }
-
-    // FIX: The unassigned panel queries for APPROVED requests.
-    // The guard must match — allow assignment only for APPROVED + unassigned.
-    if (maintenanceReq.status !== 'APPROVED') {
-      return NextResponse.json({
-        error: `Cannot assign a request with status "${maintenanceReq.status}". Only APPROVED requests can be assigned.`,
-      }, { status: 400 });
-    }
-
-    if (maintenanceReq.assignedToId !== null) {
-      return NextResponse.json({
-        error: 'This request has already been assigned to a technician.',
-      }, { status: 409 });
-    }
-
-    // ── Validate the technician ──────────────────────────────────────────────
-    const techUser = await prisma.user.findUnique({
-      where: { id: technicianId },
-      select: { id: true, role: true, accountStatus: true, firstName: true, lastName: true },
-    });
-
-    if (!techUser) {
-      return NextResponse.json({ error: 'Technician not found.' }, { status: 404 });
-    }
-
-    if (techUser.role !== 'TECHNICIAN') {
-      return NextResponse.json({ error: 'The specified user is not a technician.' }, { status: 400 });
-    }
-
-    if (techUser.accountStatus !== 'ACTIVE') {
-      return NextResponse.json({
-        error: `Technician account is ${techUser.accountStatus}. Only ACTIVE technicians can be assigned tasks.`,
-      }, { status: 400 });
-    }
-
-    const now = new Date();
-
-    // ── Atomic transaction: assign the request ──────────────────────────────
-    const updatedRequest = await prisma.$transaction(async (tx) => {
-      // 1. Update the MaintenanceRequest — move to ONGOING using atomic lock
-      const updated = await tx.maintenanceRequest.updateMany({
-        where: { id: requestId, assignedToId: null, status: 'APPROVED' },
-        data: {
-          assignedToId: technicianId,
-          assignedById: auth.userId,
-          assignedAt: now,
-          status: 'ONGOING',
-          reviewedById: auth.userId,
-          reviewedAt: now,
-        },
-      });
-
-      if (updated.count === 0) {
-        throw new Error('CONCURRENCY_CONFLICT');
-      }
-
-      // 2. Create RequestAssignment history record
-      await tx.requestAssignment.create({
-        data: {
-          requestId,
-          assignedToId: technicianId,
-          assignedById: auth.userId,
-          isActive: true,
-          assignedAt: now,
-        },
-      });
-
-      // 3. Create RequestStatusHistory
-      await tx.requestStatusHistory.create({
-        data: {
-          requestId,
-          changedById: auth.userId,
-          previousStatus: 'APPROVED',
-          newStatus: 'ONGOING',
-          remarks: `Task assigned to technician ${techUser.firstName} ${techUser.lastName}`,
-        },
-      });
-
-      // 4. Audit log
-      await tx.auditLog.create({
-        data: {
-          userId: auth.userId,
-          action: 'TASK_ASSIGNED',
-          affectedRecordId: maintenanceReq.requestCode,
-          affectedRecordType: 'MaintenanceRequest',
-          details: `Assigned ${maintenanceReq.requestCode} to ${techUser.firstName} ${techUser.lastName} (${technicianId})`,
-        },
-      });
-
-      // 5. Notify the technician
-      await tx.notification.create({
-        data: {
-          userId: technicianId,
-          type: 'TASK_ASSIGNED',
-          title: 'New Task Assigned',
-          message: `You have been assigned to maintenance request ${maintenanceReq.requestCode}.`,
-          requestId,
-        },
-      });
-
-      // 6. Notify the original requester
-      await tx.notification.create({
-        data: {
-          userId: maintenanceReq.submittedById,
-          type: 'REQUEST_APPROVED',
-          title: 'Your request has been assigned',
-          message: `Your maintenance request ${maintenanceReq.requestCode} has been assigned to a technician and is now in progress.`,
-          requestId,
-        },
-      });
-
-      return updated;
-    });
-
-    return NextResponse.json({
-      success: true,
-      request: updatedRequest,
-      message: `Request ${maintenanceReq.requestCode} successfully assigned to ${techUser.firstName} ${techUser.lastName}.`,
-    });
-
-  } catch (error: any) {
-    if (error.message === 'CONCURRENCY_CONFLICT') {
-      return NextResponse.json({ error: 'This request was just assigned by another administrator. Please refresh.' }, { status: 409 });
-    }
-    console.error('[POST /api/admin/assignments]', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+    const result = await relayRequests(session.user.id, [body.requestId], body.technicianId);
+    return NextResponse.json({ success: true, ...result, message: 'Request relayed to the technician head.' });
+  } catch (error) { return workflowErrorResponse(error); }
 }

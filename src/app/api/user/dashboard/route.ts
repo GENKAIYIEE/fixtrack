@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['STUDENT']);
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,6 +36,10 @@ export async function GET() {
           id: true,
           requestCode: true,
           issueType: true,
+          workLocation: true,
+          requestDate: true,
+          requestingParty: true,
+          requestedPriority: true,
           building: true,
           roomNumber: true,
           status: true,

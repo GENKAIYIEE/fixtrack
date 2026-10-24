@@ -1,4 +1,5 @@
 'use client';
+import { getWorkLocation } from '@/lib/requests/display';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -17,10 +18,6 @@ export default function PriorityQueue({ urgentRequests }: PriorityQueueProps) {
     return () => clearInterval(timer);
   }, []);
 
-  const formatBuilding = (building?: string) => {
-    if (!building) return '';
-    return building.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   const getRelativeTime = (date?: Date) => {
     if (!date) return '';
@@ -60,7 +57,7 @@ export default function PriorityQueue({ urgentRequests }: PriorityQueueProps) {
               <div className="flex justify-between items-center text-xs text-slate-500 font-medium mb-3">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">location_on</span> 
-                  {formatBuilding(req.building)}
+                  {getWorkLocation(req)}
                 </span>
                 <span>{getRelativeTime(req.createdAt)}</span>
               </div>

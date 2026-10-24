@@ -1,11 +1,11 @@
 import React from 'react';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 import KpiCard from '@/components/admin/KpiCard';
 import DashboardLiveRequests from '@/components/admin/DashboardLiveRequests';
 import RequestsBarChart from '@/components/admin/RequestsBarChart';
-import PriorityQueue from '@/components/admin/PriorityQueue';
 import AutoRefresh from '@/components/admin/AutoRefresh';
 import { prisma } from '@/lib/prisma';
 
@@ -41,11 +41,10 @@ async function getDashboardData() {
     totalRequestsYesterday, // Available for future trend usage
     completedToday,
     completedYesterday, // Available for future trend usage
-    pendingTriage,
+    pendingReview,
     ongoingRepairs,
     unassignedTasks,
     liveRequests,
-    priorityQueue,
     ...chartData
   ] = await Promise.all([
     prisma.maintenanceRequest.count({ where: { createdAt: { gte: startOfToday } } }),
@@ -62,24 +61,18 @@ async function getDashboardData() {
       where: { assignedToId: null, status: { notIn: ['COMPLETED', 'REJECTED', 'CANCELLED'] } },
     }),
     prisma.maintenanceRequest.findMany({ take: 5, orderBy: { createdAt: 'desc' } }),
-    prisma.maintenanceRequest.findMany({
-      where: { priorityLevel: 'URGENT', assignedToId: null, status: { notIn: ['COMPLETED', 'REJECTED', 'CANCELLED'] } },
-      take: 3,
-      orderBy: { createdAt: 'desc' },
-    }),
     ...chartQueries
   ]);
 
   return {
     kpis: {
       totalRequestsToday,
-      pendingTriage,
+      pendingReview,
       ongoingRepairs,
       completedToday,
       unassignedTasks,
     },
     liveRequests,
-    priorityQueue,
     chartData,
   };
 }
@@ -87,7 +80,7 @@ async function getDashboardData() {
 export default async function AdminDashboardPage() {
   const data = await getDashboardData();
 
-  const { kpis, liveRequests, priorityQueue, chartData } = data;
+  const { kpis, liveRequests, chartData } = data;
 
   return (
     <>
@@ -98,6 +91,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
+      <Link href="/admin/users#account-verification" className="mb-6 block rounded-xl border border-blue-200 bg-blue-50 p-4 font-medium text-blue-900">Account verification — review pending registrations and private ID photos</Link>
       {/* KPI Grid */}
       <div className="grid grid-cols-12 gap-4 mb-8">
         <div className="col-span-12 md:col-span-4 lg:col-span-2">
@@ -111,8 +105,8 @@ export default async function AdminDashboardPage() {
         </div>
         <div className="col-span-12 md:col-span-4 lg:col-span-2">
           <KpiCard
-            title="Pending Triage"
-            value={kpis.pendingTriage}
+            title="Pending Review"
+            value={kpis.pendingReview}
             icon="hourglass_empty"
             borderColorClass="border-l-amber-500"
             iconColorClass="text-amber-500"
@@ -155,13 +149,12 @@ export default async function AdminDashboardPage() {
 
       {/* Main Layout: Table + Side Panel */}
       <div className="grid grid-cols-12 gap-4 mb-8">
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+        <div className="col-span-12 flex flex-col gap-6">
           {/* FIXED: BUG-08 — Use DashboardLiveRequests client wrapper with real handlers */}
           <DashboardLiveRequests requests={liveRequests} />
           <RequestsBarChart chartData={chartData} />
         </div>
 
-        <PriorityQueue urgentRequests={priorityQueue} />
       </div>
 
       {/* Real-time background polling every 15 seconds */}

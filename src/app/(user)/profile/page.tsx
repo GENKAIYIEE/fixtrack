@@ -7,7 +7,7 @@ type UserProfile = {
   firstName: string;
   lastName: string;
   email: string;
-  idNumber: string;
+  idNumber: string | null;
   department: string | null;
   contactNumber: string | null;
   role: string;
@@ -217,7 +217,7 @@ export default function UserProfilePage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 sm:mt-2">
                   <span className="text-white/80 text-sm sm:text-base font-medium tracking-wide flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-sm">badge</span>
-                    {user.idNumber}
+                    {user.idNumber || 'Not provided'}
                   </span>
                   <span className="hidden sm:block w-1 h-1 rounded-full bg-white/50"></span>
                   <span className="text-white/80 text-sm sm:text-base font-medium tracking-wide flex items-center gap-1.5 capitalize">

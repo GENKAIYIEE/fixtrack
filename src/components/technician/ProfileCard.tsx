@@ -5,7 +5,7 @@ export interface TechnicianProfile {
   firstName: string;
   lastName: string;
   email: string;
-  idNumber: string;
+  idNumber: string | null;
   department: string;
   contactNumber: string | null;
   role: string;
@@ -75,7 +75,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user, onAvatarClick })
           {user.firstName} {user.lastName}
         </h2>
         <p className="text-sm text-slate-500 text-center mt-1">
-          ID: {user.idNumber}
+          ID: {user.idNumber || 'Not provided'}
         </p>
         <div className="bg-[#1E3A8A] text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider mx-auto mt-2 w-fit">
           TECHNICIAN

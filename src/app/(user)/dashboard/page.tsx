@@ -17,9 +17,13 @@ type KpiData = {
 type Request = {
   id: string;
   requestCode: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   status: string;
   createdAt: string;
 };

@@ -80,6 +80,7 @@ export default function UsersFilterBar({
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
             <option value="PENDING">Pending</option>
+            <option value="REJECTED">Rejected</option>
           </select>
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
             arrow_drop_down

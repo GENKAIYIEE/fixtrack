@@ -4,17 +4,22 @@ import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import RequestStatusTimeline from '@/components/user/RequestStatusTimeline';
 import PhotoGallery from '@/components/shared/PhotoGallery';
+import OfficialRequestDetails from '@/components/shared/OfficialRequestDetails';
 
-type Status = 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+type Status = 'APPROVED' | 'ON_HOLD' | 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 
 interface RequestDetail {
   id: string;
   requestCode: string;
   status: Status;
   title?: string | null;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   locationNotes?: string | null;
   description: string;
   urgencyLevel: string;
@@ -27,6 +32,8 @@ interface RequestDetail {
 }
 
 const STATUS_STYLES: Record<Status, { badge: string; dot: string; label: string }> = {
+  APPROVED: { badge: 'bg-lime-100 text-lime-800', dot: 'bg-lime-500', label: 'Approved — awaiting relay' },
+  ON_HOLD: { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500', label: 'On Hold' },
   PENDING: {
     badge: 'bg-amber-100 text-amber-800 border border-amber-200',
     dot: 'bg-amber-500',
@@ -63,21 +70,7 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   OTHERS: 'Others',
 };
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
 
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: 'Low',
-  NORMAL: 'Normal',
-  HIGH: 'High',
-  URGENT: 'Urgent',
-};
-
-const PRIORITY_STYLES: Record<string, string> = {
-  LOW: 'bg-slate-100 text-slate-600 border border-slate-200',
-  NORMAL: 'bg-blue-50 text-blue-700 border border-blue-200',
-  HIGH: 'bg-orange-50 text-orange-700 border border-orange-200',
-  URGENT: 'bg-red-50 text-red-700 border border-red-200',
-};
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -159,7 +152,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
   }
 
   const statusStyle = STATUS_STYLES[request.status] ?? STATUS_STYLES.PENDING;
-  const displayTitle = request.title ?? `${ISSUE_TYPE_LABELS[request.issueType] ?? request.issueType} Issue`;
+  const displayTitle = request.title ?? `${(request.issueType ? ISSUE_TYPE_LABELS[request.issueType] || request.issueType : request.description.slice(0, 80))} Issue`;
 
   return (
     <div className="w-full max-w-4xl">
@@ -238,18 +231,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
           <h2 className="text-base font-semibold text-slate-900">Request Details</h2>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <InfoRow icon="build" label="Issue Type" value={ISSUE_TYPE_LABELS[request.issueType] ?? request.issueType} />
-          <InfoRow icon="location_on" label="Location" value={`${getBuildingLabel(request.building)}, Room ${request.roomNumber}`} />
-          {request.locationNotes && (
-            <InfoRow icon="sticky_note_2" label="Location Notes" value={request.locationNotes} />
-          )}
-          <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Priority</p>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${PRIORITY_STYLES[request.priorityLevel] ?? 'bg-slate-100 text-slate-600'}`}>
-              <span className="material-symbols-outlined text-[14px]">flag</span>
-              {PRIORITY_LABELS[request.priorityLevel] ?? request.priorityLevel}
-            </span>
-          </div>
+          <div className="sm:col-span-2"><OfficialRequestDetails request={request} showDescription={false} /></div>
           <InfoRow icon="update" label="Last Updated" value={formatDate(request.updatedAt)} />
         </div>
       </div>
@@ -257,7 +239,7 @@ export default function UserRequestDetailPage({ params }: { params: Promise<{ id
       {/* ── Description Card ─────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
         <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-4">
-          <h2 className="text-base font-semibold text-slate-900">Description</h2>
+          <h2 className="text-base font-semibold text-slate-900">Description of work/repair:</h2>
         </div>
         <div className="p-6">
           <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{request.description}</p>

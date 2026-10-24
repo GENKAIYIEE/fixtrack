@@ -13,7 +13,7 @@ export interface UserFormData {
   role: string;
   specialization: string;
   password: string;
-  accountStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+  accountStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'REJECTED';
 }
 
 interface UserFormProps {
@@ -328,13 +328,14 @@ export default function UserForm({ mode, initialData, onSubmit, isSubmitting, on
                 <div className="flex-1">
                   <p className="font-label-md text-label-md text-on-surface">Account Status</p>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                    Active users can access the portal.
+                    Active users can access the portal. Pending accounts are decided in Account verification; rejected decisions cannot be reset here.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
                   <input
                     type="checkbox"
                     className="sr-only peer"
+                    disabled={mode === 'edit' && (initialData?.accountStatus === 'PENDING' || initialData?.accountStatus === 'REJECTED')}
                     checked={form.accountStatus === 'ACTIVE'}
                     onChange={handleToggle}
                     id="accountStatus"

@@ -1,13 +1,13 @@
 'use client';
 
-type Status = 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+type Status = 'APPROVED' | 'ON_HOLD' | 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 type StepState = 'completed' | 'active' | 'pending' | 'terminal';
 
 type RequestStatusTimelineProps = {
   status: Status;
 };
 
-const STATUS_ORDER: Status[] = ['PENDING', 'ONGOING', 'COMPLETED'];
+const STATUS_ORDER: Status[] = ['PENDING', 'APPROVED', 'ONGOING', 'COMPLETED'];
 
 const TERMINAL_STATUSES: Status[] = ['REJECTED', 'CANCELLED'];
 
@@ -19,7 +19,7 @@ function getStepState(stepValue: Status, currentStatus: Status): StepState {
     return 'terminal';
   }
 
-  const currentIdx = STATUS_ORDER.indexOf(currentStatus);
+  const currentIdx = STATUS_ORDER.indexOf(currentStatus === 'ON_HOLD' ? 'ONGOING' : currentStatus);
   const stepIdx = STATUS_ORDER.indexOf(stepValue);
 
   if (stepIdx < currentIdx) return 'completed';
@@ -30,13 +30,14 @@ function getStepState(stepValue: Status, currentStatus: Status): StepState {
 // Is the connector AFTER this step colored (i.e., the next step is at least active)?
 function isConnectorFilled(stepValue: Status, currentStatus: Status): boolean {
   if (TERMINAL_STATUSES.includes(currentStatus)) return false;
-  const currentIdx = STATUS_ORDER.indexOf(currentStatus);
+  const currentIdx = STATUS_ORDER.indexOf(currentStatus === 'ON_HOLD' ? 'ONGOING' : currentStatus);
   const stepIdx = STATUS_ORDER.indexOf(stepValue);
   return stepIdx < currentIdx;
 }
 
 const STEP_ICONS: Record<string, string> = {
   PENDING: 'schedule',
+  APPROVED: 'task_alt',
   ONGOING: 'engineering',
   COMPLETED: 'done_all',
 };
@@ -46,7 +47,8 @@ export default function RequestStatusTimeline({ status }: RequestStatusTimelineP
 
   const steps: { label: string; value: Status }[] = [
     { label: 'Submitted', value: 'PENDING' },
-    { label: 'In Progress', value: 'ONGOING' },
+    { label: 'Approved', value: 'APPROVED' },
+    { label: status === 'ON_HOLD' ? 'On Hold' : 'With Technician Head', value: 'ONGOING' },
     { label: 'Completed', value: 'COMPLETED' },
   ];
 
@@ -96,7 +98,7 @@ export default function RequestStatusTimeline({ status }: RequestStatusTimelineP
                 </div>
 
                 {/* Label */}
-                <span className={`text-xs font-semibold text-center leading-tight whitespace-nowrap ${
+                <span className={`text-xs font-semibold text-center leading-tight max-w-20 ${
                   state === 'completed'
                     ? 'text-[#10B981]'
                     : state === 'active'

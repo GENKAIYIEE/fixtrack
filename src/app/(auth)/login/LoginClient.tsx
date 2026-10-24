@@ -56,8 +56,13 @@ export default function LoginClient({ initialPlatformName = 'FixTrack', initialL
         redirect: false
       });
 
+      if (result?.error?.startsWith('ACCOUNT_REJECTED:')) {
+        let reason = ''; try { reason = decodeURIComponent(result.error.slice('ACCOUNT_REJECTED:'.length)); } catch { /* Generic rejection remains clear. */ }
+        setErrorMessage('Your registration was rejected by an administrator.' + (reason ? ` Reason: ${reason}` : ' Contact the administrator for clarification.'));
+        setIsLoading(false); return;
+      }
       if (result?.error) {
-        setErrorMessage('Invalid email or password. Please try again.');
+        setErrorMessage(result.error === 'ACCOUNT_PENDING' ? 'Your account is pending administrator review. You cannot sign in until it is approved.' : result.error === 'ACCOUNT_NOT_APPROVED' ? 'Your account has not been approved or has been deactivated. Please contact the administrator.' : 'Invalid email or password. Please try again.');
         setIsLoading(false);
         return;
       }
@@ -68,7 +73,7 @@ export default function LoginClient({ initialPlatformName = 'FixTrack', initialL
         const session = await getSession();
         const role = session?.user?.role;
 
-        if (redirectTo && redirectTo.startsWith('/')) {
+        if (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')) {
           router.replace(buildRedirectUrl(redirectTo));
         } else if (role === 'ADMIN') {
           router.replace('/admin/dashboard');

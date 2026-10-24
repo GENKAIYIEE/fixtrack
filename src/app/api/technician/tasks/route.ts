@@ -1,12 +1,12 @@
+import { requireTechnicianHead, workflowErrorResponse } from '@/lib/requests/assignment';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import prisma from '@/lib/prisma';
-import { RequestStatus, UrgencyLevel } from '@prisma/client';
+import { RequestStatus, PriorityLevel, Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['TECHNICIAN']);
     if (!session || session.user.role !== 'TECHNICIAN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -19,18 +19,20 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
-    const technicianId = session.user.id;
+    const technicianId = (await requireTechnicianHead(session.user.id)).id;
 
-    const where: any = {
+    const where: Prisma.MaintenanceRequestWhereInput = {
       assignedToId: technicianId,
       ...(search && {
         OR: [
           { requestCode: { contains: search, mode: 'insensitive' } },
-          { roomNumber: { contains: search, mode: 'insensitive' } }
+          { roomNumber: { contains: search, mode: 'insensitive' } },
+          { workLocation: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
         ]
       }),
       ...(status && { status: status as RequestStatus }),
-      ...(priority && { urgencyLevel: priority as UrgencyLevel }),
+      ...(priority && { priorityLevel: priority as PriorityLevel }),
       ...(date && {
         assignedAt: {
           gte: new Date(date),
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: [{ urgencyLevel: 'desc' }, { assignedAt: 'desc' }],
+        orderBy: [{ priorityLevel: 'desc' }, { assignedAt: 'desc' }],
         include: {
           submitter: { select: { firstName: true, lastName: true } }
         }
@@ -56,7 +58,7 @@ export async function GET(request: Request) {
     const activeCount = await prisma.maintenanceRequest.count({
       where: {
         assignedToId: technicianId,
-        status: { in: ['ONGOING', 'PENDING'] }
+        status: { in: ['ONGOING', 'ON_HOLD'] }
       }
     });
 
@@ -67,7 +69,6 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error fetching technician tasks:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return workflowErrorResponse(error);
   }
 }

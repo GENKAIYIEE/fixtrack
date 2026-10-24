@@ -1,19 +1,24 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import TasksPagination from '@/components/technician/TasksPagination';
 import Toast from '@/components/shared/Toast';
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
 
 interface HistoryTask {
   id: string;
   requestCode: string;
-  issueType: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
   description: string;
-  building: string;
-  roomNumber: string;
+  building: string | null;
+  roomNumber: string | null;
   completedAt: string | null;
   submitter: {
     firstName: string;
@@ -124,15 +129,15 @@ export default function TaskHistoryPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex flex-col gap-1">
-                        <span className="font-medium text-on-surface line-clamp-1">{task.issueType}</span>
+                        <span className="font-medium text-on-surface line-clamp-1">{getRequestSubject(task)}</span>
                         <span className="text-sm text-on-surface-variant line-clamp-1">{task.description}</span>
                       </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex flex-col gap-1">
                         {/* FIXED: BUG #4 — Use getBuildingLabel utility */}
-                        <span className="text-on-surface">{getBuildingLabel(task.building)}</span>
-                        <span className="text-sm text-on-surface-variant">Room {task.roomNumber}</span>
+                        <span className="text-on-surface">{getWorkLocation(task)}</span>
+                        
                       </div>
                     </td>
                     <td className="py-4 px-6">

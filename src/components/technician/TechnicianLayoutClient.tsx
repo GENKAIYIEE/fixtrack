@@ -34,7 +34,7 @@ export default function TechnicianLayoutClient({
         onClose={() => setIsMobileSidebarOpen(false)}
       />
 
-      <div className="flex-1 ml-0 lg:ml-[260px] print:ml-0 flex flex-col min-h-screen transition-all duration-300">
+      <div className="min-w-0 flex-1 ml-0 lg:ml-[260px] print:ml-0 flex flex-col min-h-screen transition-all duration-300">
         {/* TopBar with Hamburger Toggle */}
         <TechnicianTopBar
           firstName={firstName}
@@ -42,7 +42,7 @@ export default function TechnicianLayoutClient({
           onOpenSidebar={() => setIsMobileSidebarOpen(true)}
         />
 
-        <main className="flex-1 mt-16 print:mt-0 p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto w-full">
+        <main className="min-w-0 min-w-0 flex-1 mt-16 print:mt-0 p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto w-full">
           {children}
         </main>
       </div>

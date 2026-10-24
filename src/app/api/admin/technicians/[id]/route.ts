@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 import bcryptjs from 'bcryptjs';
+import { decideVerification, VerificationError } from '@/lib/verification/decisions';
 
 async function verifyAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getActiveSession(['ADMIN']);
   const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
@@ -97,13 +97,15 @@ export async function PUT(
     // Check if user is technician
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { role: true }
+      select: { role: true, accountStatus: true }
     });
 
     if (!existingUser || existingUser.role !== 'TECHNICIAN') {
       return NextResponse.json({ error: 'Target user is not a technician' }, { status: 403 });
     }
 
+    if (accountStatus && accountStatus !== existingUser.accountStatus &&
+        (id === auth.userId || ['PENDING','REJECTED'].includes(existingUser.accountStatus) || !['ACTIVE','INACTIVE'].includes(accountStatus))) return NextResponse.json({ error: 'Use Account verification for pending decisions. Recorded rejections cannot be reset here.' }, { status: 409 });
     // Check email uniqueness excluding self
     const emailConflict = await prisma.user.findFirst({
       where: { email, NOT: { id } },
@@ -121,7 +123,7 @@ export async function PUT(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id, accountStatus: existingUser.accountStatus },
       data: {
         firstName,
         lastName,
@@ -162,6 +164,7 @@ export async function PUT(
 
     return NextResponse.json(updatedUser);
   } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') return NextResponse.json({ error: 'Account changed. Refresh and retry.' }, { status: 409 });
     console.error(`[PUT /api/admin/technicians/${id}]`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
@@ -201,12 +204,16 @@ export async function PATCH(
     }
 
     if (accountStatus) {
-      if (!['ACTIVE', 'INACTIVE', 'PENDING'].includes(accountStatus)) {
+      if (!['ACTIVE', 'INACTIVE', 'PENDING', 'REJECTED'].includes(accountStatus)) {
         return NextResponse.json({ error: 'Invalid account status' }, { status: 400 });
       }
 
+      if (existingUser.accountStatus === 'PENDING' && accountStatus !== 'PENDING') return NextResponse.json(await decideVerification(auth.userId, userIdToUpdate, { action: accountStatus === 'ACTIVE' ? 'APPROVE' : 'REJECT' }));
+      if (accountStatus === existingUser.accountStatus) return NextResponse.json({ id: existingUser.id, accountStatus });
+      if (auth.userId === userIdToUpdate) return NextResponse.json({ error: 'You cannot change your own account status.' }, { status: 403 });
+      if (existingUser.accountStatus === 'REJECTED' || !['ACTIVE','INACTIVE'].includes(accountStatus)) return NextResponse.json({ error: 'Recorded verification decisions cannot be reset here.' }, { status: 409 });
       const updatedUser = await prisma.user.update({
-        where: { id: userIdToUpdate },
+        where: { id: userIdToUpdate, accountStatus: existingUser.accountStatus },
         data: { accountStatus },
         select: {
           id: true,
@@ -279,6 +286,8 @@ export async function PATCH(
 
     return NextResponse.json({ error: 'No valid update data provided' }, { status: 400 });
   } catch (error) {
+    if (error instanceof VerificationError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') return NextResponse.json({ error: 'Account changed. Refresh and retry.' }, { status: 409 });
     console.error(`[PATCH /api/admin/technicians/${userIdToUpdate}]`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

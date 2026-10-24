@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 type Technician = {
   id: string;
@@ -10,9 +10,8 @@ type Technician = {
 
 type BulkAssignModalProps = {
   isOpen: boolean;
-  requests: any[];
+  requests: { id: string; status: string; assignedToId?: string | null }[];
   selectedIds: string[];
-  technicians: Technician[];
   onClose: () => void;
   onAssigned: () => void;
 };
@@ -21,11 +20,35 @@ export default function BulkAssignModal({
   isOpen,
   requests,
   selectedIds,
-  technicians,
   onClose,
   onAssigned,
 }: BulkAssignModalProps) {
   const [selectedTechId, setSelectedTechId] = useState('');
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [headError, setHeadError] = useState('');
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    async function loadHead() {
+      try {
+        const response = await fetch('/api/admin/assignments?type=technicians');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'The designated head is unavailable.');
+        if (!cancelled) {
+          setTechnicians(data.technicians || []);
+          setSelectedTechId(data.technicians?.[0]?.id || '');
+          setHeadError('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTechnicians([]); setSelectedTechId('');
+          setHeadError(error instanceof Error ? error.message : 'The designated head is unavailable.');
+        }
+      }
+    }
+    void loadHead();
+    return () => { cancelled = true; };
+  }, [isOpen]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,11 +63,11 @@ export default function BulkAssignModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTechId) {
-      setError('Please select a technician.');
+      setError('Please select the designated technician head.');
       return;
     }
     if (eligibleIds.length === 0) {
-      setError('No eligible requests to assign.');
+      setError('No approved, unassigned requests to relay.');
       return;
     }
 
@@ -64,12 +87,12 @@ export default function BulkAssignModal({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to assign requests');
+        throw new Error(data.error || 'Failed to relay requests');
       }
 
       onAssigned();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not relay requests. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +111,7 @@ export default function BulkAssignModal({
     >
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-h2 text-h2 text-slate-900">Bulk Assign Tasks</h3>
+          <h3 className="font-h2 text-h2 text-slate-900">Bulk Relay to Technician Head</h3>
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -104,7 +127,7 @@ export default function BulkAssignModal({
             <div className="flex items-start gap-3 mb-4 p-3 rounded-lg bg-orange-50 text-orange-800 border border-orange-200">
               <span className="material-symbols-outlined text-orange-600 mt-0.5">warning</span>
               <p className="text-sm font-medium">
-                You selected <span className="font-bold">{selectedIds.length}</span> requests, but <span className="font-bold">{invalidCount}</span> of them are skipped because they are already assigned, rejected, or completed.
+                You selected <span className="font-bold">{selectedIds.length}</span> requests, but <span className="font-bold">{invalidCount}</span> of them are skipped because they are not approved and unassigned.
               </p>
             </div>
           )}
@@ -113,21 +136,22 @@ export default function BulkAssignModal({
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-blue-50 text-blue-800">
               <span className="material-symbols-outlined text-blue-600">info</span>
               <p className="text-sm font-medium">
-                You are assigning <span className="font-bold">{eligibleIds.length}</span> eligible requests.
+                You are relaying <span className="font-bold">{eligibleIds.length}</span> eligible requests.
               </p>
             </div>
           ) : (
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-200">
               <span className="material-symbols-outlined text-red-600">block</span>
               <p className="text-sm font-medium">
-                None of the selected requests are eligible for assignment.
+                None of the selected requests are eligible for relay.
               </p>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
+            {headError && <p role="alert" className="mb-4 text-sm text-red-700">{headError}</p>}
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Select Technician
+              Designated Technician Head
             </label>
             <select
               value={selectedTechId}
@@ -136,9 +160,9 @@ export default function BulkAssignModal({
                 setError(null);
               }}
               className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all disabled:opacity-50"
-              disabled={isSubmitting || eligibleIds.length === 0}
+              disabled={isSubmitting || eligibleIds.length === 0 || technicians.length === 0}
             >
-              <option value="">-- Choose a Technician --</option>
+              <option value="">-- Select the Technician Head --</option>
               {technicians.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.firstName} {t.lastName}
@@ -170,12 +194,12 @@ export default function BulkAssignModal({
                 {isSubmitting ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-                    Assigning...
+                    Relaying...
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[18px]">assignment_ind</span>
-                    Confirm Assignment
+                    Confirm Relay
                   </>
                 )}
               </button>

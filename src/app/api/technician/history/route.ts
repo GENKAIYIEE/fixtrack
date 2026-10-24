@@ -1,11 +1,11 @@
+import { requireTechnicianHead, workflowErrorResponse } from '@/lib/requests/assignment';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import prisma from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['TECHNICIAN']);
     if (!session || session.user.role !== 'TECHNICIAN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
-    const technicianId = session.user.id;
+    const technicianId = (await requireTechnicianHead(session.user.id)).id;
 
     const where = {
       assignedToId: technicianId,
@@ -43,7 +43,6 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error fetching technician history:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return workflowErrorResponse(error);
   }
 }

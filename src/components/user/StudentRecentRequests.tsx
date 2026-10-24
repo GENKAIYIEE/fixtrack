@@ -1,13 +1,18 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import Link from 'next/link';
 
 type Request = {
   id: string;
   requestCode: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   status: string;
   createdAt: string;
 };
@@ -17,16 +22,9 @@ type Props = {
   isLoading: boolean;
 };
 
-const issueTypeLabels: Record<string, string> = {
-  HVAC: 'HVAC',
-  ELECTRICAL: 'Electrical',
-  PLUMBING: 'Plumbing',
-  CARPENTRY: 'Carpentry',
-  STRUCTURAL: 'Structural',
-  OTHERS: 'Others',
-};
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
+
 
 const statusBadge: Record<string, string> = {
   PENDING:
@@ -134,11 +132,11 @@ export default function StudentRecentRequests({ requests, isLoading }: Props) {
                     </Link>
                   </td>
                   <td className="px-4 py-3 font-body-sm text-body-sm text-on-surface-variant text-sm">
-                    {issueTypeLabels[req.issueType] ?? req.issueType}
+                    {getRequestSubject(req)}
                   </td>
                   <td className="px-4 py-3 font-body-sm text-body-sm text-on-surface-variant text-sm">
-                    {getBuildingLabel(req.building)}
-                    {req.roomNumber ? ` — ${req.roomNumber}` : ''}
+                    {getWorkLocation(req)}
+                    
                   </td>
                   <td className="px-4 py-3">
                     <span className={statusBadge[req.status] ?? statusBadge['UNKNOWN']}>

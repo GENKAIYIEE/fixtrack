@@ -12,11 +12,13 @@ model User {
   passwordHash        String
   firstName           String
   lastName            String
-  idNumber            String                 @unique
+  idNumber            String?                @unique
   department          String?
   role                UserRole
   specialization      Specialization?
   accountStatus       AccountStatus          @default(PENDING)
+  verificationRejectionReason String?
+  registrationIdPath  String?
   avatarUrl           String?
   contactNumber       String?
   resetOtp            String?
@@ -34,17 +36,23 @@ model User {
   assignmentsReceived RequestAssignment[]    @relation("AssignedTo")
   statusChanges       RequestStatusHistory[]
   updatedSettings     SystemSettings[]
+  createdWorkers      MaintenanceWorker[] @relation("WorkerCreator")
+  recordedWorkers     TaskWorkerAssignment[] @relation("WorkerRecorder")
 }
 
 model MaintenanceRequest {
   id                 String                 @id @default(cuid())
   requestCode        String                 @unique
   submittedById      String
-  issueType          IssueType
-  building           Building
-  roomNumber         String
+  issueType          IssueType?
+  building           Building?
+  roomNumber         String?
   locationNotes      String?
   description        String
+  requestDate        DateTime?              @db.Date
+  requestingParty    String?
+  workLocation       String?
+  requestedPriority  RequestedPriority?
   urgencyLevel       UrgencyLevel
   status             RequestStatus          @default(PENDING)
   priorityLevel      PriorityLevel          @default(NORMAL)
@@ -72,6 +80,8 @@ model MaintenanceRequest {
 
   @@index([status])
   @@index([submittedById])
+  workerAssignments TaskWorkerAssignment[]
+
   @@index([assignedToId])
   @@index([urgencyLevel])
   @@index([createdAt])
@@ -172,6 +182,7 @@ enum AccountStatus {
   ACTIVE
   INACTIVE
   PENDING
+  REJECTED
 }
 
 enum RequestStatus {
@@ -246,4 +257,45 @@ enum AuditAction {
   USER_UPDATED
   USER_DEACTIVATED
   PASSWORD_RESET
+}
+
+// Separate from the admin-assessed PriorityLevel; legacy rows remain null.
+enum RequestedPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Directory entries only: maintenance workers have no credentials, sessions or User roles.
+model MaintenanceWorker {
+  id String @id @default(cuid())
+  name String
+  contactNumber String
+  specialization Specialization @default(GENERAL)
+  isAvailable Boolean @default(true)
+  isArchived Boolean @default(false)
+  createdById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creator User @relation("WorkerCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  assignments TaskWorkerAssignment[]
+  @@index([isArchived, name])
+}
+
+// Preserve the worker details as recorded, even after directory edits or archiving.
+model TaskWorkerAssignment {
+  id String @id @default(cuid())
+  requestId String
+  workerId String
+  recordedById String
+  workerName String
+  contactNumber String
+  specialization Specialization
+  assignedAt DateTime @default(now())
+  releasedAt DateTime?
+  request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  worker MaintenanceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  recorder User @relation("WorkerRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  @@index([requestId, releasedAt])
+  @@index([workerId, releasedAt])
 }

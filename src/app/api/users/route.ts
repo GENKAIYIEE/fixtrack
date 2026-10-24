@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['ADMIN']);
     const authUser = session?.user;
 
     if (!authUser) {
@@ -17,9 +16,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    const where: any = {};
-    if (role) where.role = role;
-    if (status) where.accountStatus = status;
+    const where: import('@prisma/client').Prisma.UserWhereInput = {};
+    if (role) where.role = role as import('@prisma/client').UserRole;
+    if (status) where.accountStatus = status as import('@prisma/client').AccountStatus;
 
     const users = await prisma.user.findMany({
       where,

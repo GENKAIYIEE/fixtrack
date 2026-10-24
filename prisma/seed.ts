@@ -10,6 +10,10 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
+  // Optional manual bootstrap only. Never use this to migrate an existing system.
+  const seedPassword = process.env.SEED_ADMIN_PASSWORD;
+  const seedEmail = process.env.SEED_ADMIN_EMAIL;
+  if (!seedPassword || !seedEmail) throw new Error('Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD explicitly before running this optional bootstrap.');
   console.log('🌱 Seeding FixTrack database...')
 
   // ── Step 0: Seed System Settings ──
@@ -49,7 +53,7 @@ async function main() {
 
   // ── Step 1: Check if Admin already exists ──
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: 'admin@gmail.com' }
+    where: { email: seedEmail }
   })
 
   if (existingAdmin) {
@@ -58,7 +62,7 @@ async function main() {
   }
 
   // ── Step 2: Hash the Admin password ──
-  const hashedPassword = await bcrypt.hash('password123', 12)
+  const hashedPassword = await bcrypt.hash(seedPassword, 12)
 
   // ── Step 3: Create Supabase Auth user for Admin ──
   const { createClient } = await import('@supabase/supabase-js')
@@ -68,8 +72,8 @@ async function main() {
   )
 
   const { data: supabaseUser, error } = await supabase.auth.admin.createUser({
-    email: 'admin@gmail.com',
-    password: 'password123',
+    email: seedEmail,
+    password: seedPassword,
     email_confirm: true
   })
 
@@ -82,7 +86,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       id: supabaseUser.user.id,
-      email: 'admin@gmail.com',
+      email: seedEmail,
       passwordHash: hashedPassword,
       firstName: 'Admin',
       lastName: 'FixTrack',
@@ -94,8 +98,6 @@ async function main() {
   })
 
   console.log('✅ Admin account created successfully:', admin.email)
-  console.log('📧 Email:    admin@gmail.com')
-  console.log('🔑 Password: password123')
   console.log('🛡️  Role:     ADMIN')
   // ── DEMO DATA SEEDING ──
 

@@ -22,9 +22,13 @@ type Submitter = {
 type ActiveTask = {
   id: string;
   requestCode: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   description: string;
   priorityLevel: string;
   status: string;
@@ -76,7 +80,7 @@ export default function TechnicianDashboardPage() {
     };
 
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(fetchDashboardData, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -87,6 +91,7 @@ export default function TechnicianDashboardPage() {
 
   return (
     <div className="max-w-[1440px] mx-auto w-full">
+      <p className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">You handle relayed requests in FixTrack and contact the appropriate maintenance worker outside the system. External contact and worker activity are not automatically tracked.</p>
       {/* Urgent Banner */}
       <UrgentTaskBanner urgentTask={data?.urgentTask ?? null} />
 
@@ -117,7 +122,7 @@ export default function TechnicianDashboardPage() {
                   build_circle
                 </span>
                 <span className="font-sidebar-label text-sidebar-label uppercase">
-                  Technician — {technician?.specialization ? `${specializationLabel} Specialist` : 'General Maintenance'}
+                  Technician Head — {technician?.specialization ? `${specializationLabel} Specialist` : 'General Maintenance'}
                 </span>
               </div>
             </>

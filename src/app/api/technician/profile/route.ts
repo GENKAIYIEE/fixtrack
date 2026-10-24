@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import prisma from '@/lib/prisma';
 import { Specialization } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['TECHNICIAN']);
     if (!session?.user || session.user.role !== 'TECHNICIAN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -60,7 +59,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['TECHNICIAN']);
     if (!session?.user || session.user.role !== 'TECHNICIAN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

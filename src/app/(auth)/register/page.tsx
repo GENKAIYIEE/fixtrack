@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
+import TurnstileWidget from '@/components/auth/TurnstileWidget';
 
 const calculatePasswordStrength = (pass: string) => {
   const reqs = {
@@ -34,11 +35,16 @@ export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [idNumber, setIdNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
+  const idPhotoInput = useRef<HTMLInputElement>(null);
+  const [idPhotoError, setIdPhotoError] = useState('');
+  const [idPhoto, setIdPhoto] = useState<File | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaRevision, setCaptchaRevision] = useState(0);
+  const [fileRevision, setFileRevision] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -51,7 +57,7 @@ export default function RegisterPage() {
     setSuccessMessage(null);
 
     // Basic required field validation
-    if (!firstName || !lastName || !email || !idNumber || !department || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !department || !password || !confirmPassword) {
       setErrorMessage('All fields are required.');
       return;
     }
@@ -71,23 +77,17 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!idPhoto || idPhoto.size > 3 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(idPhoto.type)) {
+      setErrorMessage('Upload one JPG, PNG, or WEBP photo of your valid ID, no larger than 3MB.'); return;
+    }
+    if (!captchaToken) { setErrorMessage('Complete the CAPTCHA before registering.'); return; }
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          idNumber,
-          department,
-          password,
-        }),
-      });
+      const form = new FormData();
+      for (const [key, value] of Object.entries({ firstName, lastName, email, department, password, turnstileToken: captchaToken })) form.append(key, value);
+      form.append('idPhoto', idPhoto);
+      const response = await fetch('/api/auth/register', { method: 'POST', body: form });
 
       const data = await response.json();
 
@@ -96,19 +96,20 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccessMessage('Registration successful! Your account is now active. You can log in immediately.');
+      setSuccessMessage(data.message || 'Your account is pending administrator review. You cannot log in until it is approved.');
+      setIdPhoto(null); setIdPhotoError(''); setFileRevision(value => value + 1);
       
       // Clear form
       setFirstName('');
       setLastName('');
       setEmail('');
-      setIdNumber('');
       setDepartment('');
       setPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred. Please try again.');
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
     } finally {
+      setCaptchaToken(''); setCaptchaRevision(value => value + 1);
       setIsLoading(false);
     }
   };
@@ -209,22 +210,6 @@ export default function RegisterPage() {
               />
             </div>
             
-            {/* ID Number */}
-            <div className="flex flex-col gap-2">
-              <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="idNumber">ID Number</label>
-              <input 
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-4 py-3 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors" 
-                id="idNumber" 
-                name="idNumber" 
-                placeholder="Enter institutional ID" 
-                required 
-                type="text"
-                value={idNumber}
-                onChange={(e) => setIdNumber(e.target.value)}
-                disabled={isLoading || successMessage !== null}
-              />
-            </div>
-            
             {/* Department */}
             <div className="flex flex-col gap-2">
               <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="department">Department</label>
@@ -321,12 +306,40 @@ export default function RegisterPage() {
               />
             </div>
             
+            <div className="flex flex-col gap-2">
+              <label htmlFor="idPhoto" className="font-label-md text-label-md text-on-surface-variant">Photo of Valid ID</label>
+              <input key={fileRevision} ref={idPhotoInput} id="idPhoto" name="idPhoto" type="file" required accept="image/jpeg,image/png,image/webp"
+                disabled={isLoading || successMessage !== null} tabIndex={-1}
+                onChange={event => {
+                  const file = event.target.files?.[0] || null;
+                  setErrorMessage(null); setIdPhotoError('');
+                  if (file && (file.size === 0 || file.size > 3 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
+                    setIdPhoto(null); setIdPhotoError('Choose one JPG, PNG, or WEBP image, no larger than 3MB.'); setFileRevision(value => value + 1); return;
+                  }
+                  setIdPhoto(file);
+                }}
+                aria-describedby="id-photo-help id-photo-selection" aria-invalid={Boolean(idPhotoError)} className="sr-only" />
+              <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+                <button type="button" aria-controls="idPhoto" onClick={() => idPhotoInput.current?.click()}
+                  disabled={isLoading || successMessage !== null}
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+                  {idPhoto ? 'Change ID photo' : 'Upload valid ID photo'}
+                </button>
+                <p id="id-photo-selection" role="status" aria-live="polite" className="mt-3 break-all text-sm text-on-surface-variant">{idPhoto ? `Selected: ${idPhoto.name} (${(idPhoto.size / 1024).toFixed(1)} KB)` : 'No ID photo selected.'}</p>
+                {idPhoto && <button type="button" disabled={isLoading || successMessage !== null} onClick={() => { setIdPhoto(null); setIdPhotoError(''); setFileRevision(value => value + 1); }} className="mt-2 rounded px-1 py-1 text-sm font-medium text-red-700 underline focus-visible:outline-2 focus-visible:outline-offset-2">Remove ID photo</button>}
+              </div>
+              <p id="id-photo-help" className="text-xs text-on-surface-variant">Upload one JPG, PNG, or WEBP image, up to 3MB. It is stored privately for administrator review. No face recognition is performed.</p>
+              {idPhotoError && <p role="alert" className="text-sm text-red-700">{idPhotoError}</p>}
+            </div>
+            {!successMessage && <TurnstileWidget key={captchaRevision} onToken={setCaptchaToken} />}
+            <p className="text-sm text-on-surface-variant">Registration requires administrator approval. Completing CAPTCHA does not activate your account.</p>
             {/* Submit Button */}
             <div className="pt-2">
               <button 
                 className="w-full flex justify-center items-center py-4 px-8 bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md rounded-lg shadow-sm transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed" 
                 type="submit"
-                disabled={isLoading || successMessage !== null}
+                disabled={isLoading || successMessage !== null || !captchaToken}
               >
                 {isLoading ? (
                   <>
@@ -343,14 +356,14 @@ export default function RegisterPage() {
             </div>
             
             {errorMessage && (
-              <div className="mt-4 p-4 bg-error-container text-on-error-container rounded-lg text-sm flex items-start gap-3">
+              <div role="alert" className="mt-4 p-4 bg-error-container text-on-error-container rounded-lg text-sm flex items-start gap-3">
                 <span className="material-symbols-outlined">error</span>
                 <p>{errorMessage}</p>
               </div>
             )}
             
             {successMessage && (
-              <div className="mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-sm flex items-start gap-3">
+              <div role="status" className="mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-sm flex items-start gap-3">
                 <span className="material-symbols-outlined">check_circle</span>
                 <p>{successMessage}</p>
               </div>

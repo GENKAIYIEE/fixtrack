@@ -1,4 +1,5 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import { useRouter } from 'next/navigation';
 
@@ -10,9 +11,13 @@ type Submitter = {
 type ActiveTask = {
   id: string;
   requestCode: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   description: string;
   priorityLevel: string;
   status: string;
@@ -25,7 +30,7 @@ type ActiveTaskCardsProps = {
   isLoading?: boolean;
 };
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -105,7 +110,7 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
 
   return (
     <section>
-      <h2 className="font-h2 text-h2 text-on-surface mb-6">My Active Task Cards</h2>
+      <h2 className="font-h2 text-h2 text-on-surface mb-6">Recently Forwarded Active Tasks</h2>
 
       {isLoading ? (
         <div className="grid grid-cols-12 gap-6">
@@ -138,7 +143,7 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="bg-surface-container-high text-on-surface-variant font-sidebar-label text-sidebar-label px-2 py-1 rounded">
-                        {task.issueType}
+                        {getRequestSubject(task)}
                       </span>
                       <span className="font-body-sm text-body-sm text-outline">
                         Reported {timeAgo(task.createdAt)}
@@ -174,8 +179,8 @@ export default function ActiveTaskCards({ tasks, isLoading }: ActiveTaskCardsPro
                     <span className="font-sidebar-label text-sidebar-label uppercase">Location</span>
                   </div>
                   <span className="font-body-sm text-body-sm text-on-surface">
-                    {getBuildingLabel(task.building)}
-                    {task.roomNumber ? ` — ${task.roomNumber}` : ''}
+                    {getWorkLocation(task)}
+                    
                   </span>
                 </div>
 

@@ -103,7 +103,7 @@ export default function RequestsFilterBar({
           {/* Priority */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-              Priority
+              Requested Priority
             </label>
             <select
               value={priorityFilter}
@@ -111,9 +111,8 @@ export default function RequestsFilterBar({
               className={selectClass}
             >
               <option value="">All Priorities</option>
-              <option value="URGENT">Urgent</option>
               <option value="HIGH">High</option>
-              <option value="NORMAL">Normal</option>
+              <option value="MEDIUM">Medium</option>
               <option value="LOW">Low</option>
             </select>
           </div>

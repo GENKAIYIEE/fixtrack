@@ -1,13 +1,12 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import { useState, useEffect, useCallback } from 'react';
 import Toast from '@/components/shared/Toast';
 
 type IssueType = 'HVAC' | 'ELECTRICAL' | 'PLUMBING' | 'CARPENTRY' | 'STRUCTURAL' | 'OTHERS';
 type UrgencyLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
-type Building =
-  | 'COLLEGE_BUILDING'
-  | 'BASIC_EDUCATION_BUILDING';
+
 
 interface RejectRequestModalProps {
   isOpen: boolean;
@@ -20,10 +19,15 @@ interface RejectRequestModalProps {
       firstName: string;
       lastName: string;
     };
-    issueType: IssueType;
+    issueType: string | null;
+    workLocation?: string | null;
+    requestDate?: string | null;
+    requestingParty?: string | null;
+    requestedPriority?: string | null;
+    description?: string | null;
     urgencyLevel: UrgencyLevel;
-    building: Building;
-    roomNumber: string;
+    building: string | null;
+    roomNumber: string | null;
     priorityLevel: string;
   } | null;
 }
@@ -37,7 +41,7 @@ const ISSUE_ICONS: Record<IssueType, string> = {
   OTHERS: 'build',
 };
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
 
 const PRESET_CHIPS = ['Duplicate Request', 'Out of Scope', 'Missing Information'];
 
@@ -194,9 +198,9 @@ export default function RejectRequestModal({
                   </span>
                   <div className="flex items-center gap-1 text-on-surface">
                     <span className="material-symbols-outlined text-[16px] text-surface-tint">
-                      {ISSUE_ICONS[request.issueType]}
+                      {ISSUE_ICONS[request.issueType as IssueType]}
                     </span>
-                    <span className="font-body-sm text-body-sm">{request.issueType}</span>
+                    <span className="font-body-sm text-body-sm">{getRequestSubject(request)}</span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -204,7 +208,7 @@ export default function RejectRequestModal({
                     Location
                   </span>
                   <span className="font-body-sm text-body-sm text-on-surface">
-                    {getBuildingLabel(request.building)}, {request.roomNumber}
+                    {getWorkLocation(request)}
                   </span>
                 </div>
               </div>

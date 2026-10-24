@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 import bcryptjs from 'bcryptjs';
+import { isActiveAdmin } from '@/lib/requests/assignment';
 import type { Prisma } from '@prisma/client';
 
 async function verifyAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getActiveSession(['ADMIN']);
   const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };
 
-  if (authUser.role !== 'ADMIN') return { error: 'Forbidden', status: 403 as const };
+  if (authUser.role !== 'ADMIN' || !await isActiveAdmin(authUser.id)) return { error: 'Forbidden', status: 403 as const };
 
   return { userId: authUser.id };
 }
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const role = searchParams.get('role')?.trim() ?? '';
   const status = searchParams.get('status')?.trim() ?? '';
 
+  if (!Number.isFinite(page) || !Number.isFinite(limit) || limit > 100 || search.length > 254 || (role && !['ADMIN','STUDENT','TECHNICIAN'].includes(role)) || (status && !['ACTIVE','PENDING','INACTIVE','REJECTED'].includes(status))) return NextResponse.json({ error: 'Invalid account filters.' }, { status: 400 });
   const where: Prisma.UserWhereInput = {
     ...(search && {
       OR: [
@@ -59,6 +60,8 @@ export async function GET(request: NextRequest) {
           role: true,
           specialization: true,
           accountStatus: true,
+          verificationRejectionReason: true,
+          registrationIdPath: true,
           avatarUrl: true,
           createdAt: true,
         }
@@ -67,7 +70,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      users,
+      users: users.map(({ registrationIdPath, ...user }) => ({ ...user, hasRegistrationId: Boolean(registrationIdPath) })),
       pagination: {
         total,
         page,

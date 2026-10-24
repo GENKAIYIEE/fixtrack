@@ -192,7 +192,7 @@ export default function AdminRequestsPage() {
   };
 
   const handleAssign = (id: string) => {
-    router.push(`/admin/assignments?requestId=${id}`);
+    router.push(`/admin/requests/${id}`);
   };
 
   const handleReject = (id: string) => {
@@ -248,6 +248,8 @@ export default function AdminRequestsPage() {
         building: rejectingRequest.building as 'COLLEGE_BUILDING' | 'BASIC_EDUCATION_BUILDING',
         roomNumber: rejectingRequest.roomNumber,
         priorityLevel: rejectingRequest.priorityLevel,
+        workLocation: rejectingRequest.workLocation,
+        description: rejectingRequest.description,
       }
     : null;
 
@@ -360,7 +362,6 @@ export default function AdminRequestsPage() {
         isOpen={bulkAssignModalOpen}
         requests={requests}
         selectedIds={selectedIds}
-        technicians={technicians}
         onClose={() => setBulkAssignModalOpen(false)}
         onAssigned={() => {
           setBulkAssignModalOpen(false);

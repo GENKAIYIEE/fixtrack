@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import RegistrationIdReview from '@/components/admin/RegistrationIdReview';
 import UserForm, { UserFormData } from '@/components/admin/UserForm';
 
 interface UserSlideOverModalProps {
@@ -129,6 +130,7 @@ export default function UserSlideOverModal({ isOpen, onClose, mode, userId, onSu
           </div>
         )}
 
+        {isOpen && mode === 'edit' && userId && <div className="max-h-[55vh] overflow-y-auto"><RegistrationIdReview key={userId} userId={userId} /></div>}
         {/* Content (Scrollable) */}
         <div className="flex-1 overflow-hidden relative bg-surface-container-lowest">
           {isLoadingUser ? (

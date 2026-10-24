@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import TechnicianLayoutClient from '@/components/technician/TechnicianLayoutClient';
 
 export default async function TechnicianLayout({
@@ -8,7 +7,7 @@ export default async function TechnicianLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = await getActiveSession();
 
   if (!session?.user) {
     redirect('/login');

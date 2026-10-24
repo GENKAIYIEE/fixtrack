@@ -9,6 +9,7 @@ import UsersPagination from '@/components/admin/UsersPagination';
 import DeactivateUserModal from '@/components/admin/DeactivateUserModal';
 import ResetPasswordModal from '@/components/admin/ResetPasswordModal';
 import UserSlideOverModal from '@/components/admin/UserSlideOverModal';
+import AccountVerification from '@/components/admin/AccountVerification';
 import Toast from '@/components/shared/Toast';
 
 export default function UserManagementPage() {
@@ -141,6 +142,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
+      <AccountVerification onDecision={() => void fetchUsers(true)} />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="font-h1 text-h1 text-on-surface">User Management</h1>
         <button

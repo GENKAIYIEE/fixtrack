@@ -1,4 +1,5 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import Link from 'next/link';
 import RequestStatusTimeline from './RequestStatusTimeline';
@@ -7,9 +8,13 @@ type Request = {
   id: string;
   requestCode: string;
   title: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   status: string;
   priorityLevel: string;
   urgencyLevel: string;
@@ -23,16 +28,9 @@ interface RequestItemProps {
   onCancel?: (id: string) => void;
 }
 
-const issueTypeLabels: Record<string, string> = {
-  HVAC: 'HVAC',
-  ELECTRICAL: 'Electrical',
-  PLUMBING: 'Plumbing',
-  CARPENTRY: 'Carpentry',
-  STRUCTURAL: 'Structural',
-  OTHERS: 'Others',
-};
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
+
 
 const statusBadge: Record<string, string> = {
   PENDING:
@@ -85,7 +83,7 @@ export default function RequestItem({ request, onCancel }: RequestItemProps) {
                 Issue Type
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                {issueTypeLabels[request.issueType] ?? request.issueType}
+                {getRequestSubject(request)}
               </p>
             </div>
             <div>
@@ -93,7 +91,7 @@ export default function RequestItem({ request, onCancel }: RequestItemProps) {
                 Location
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                {getBuildingLabel(request.building)}{request.roomNumber ? ` — ${request.roomNumber}` : ''}
+                {getWorkLocation(request)}
               </p>
             </div>
             <div>

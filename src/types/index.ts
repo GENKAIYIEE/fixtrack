@@ -5,7 +5,7 @@
 
 export type UserRole = 'STUDENT' | 'TECHNICIAN' | 'ADMIN';
 
-export type RequestStatus = 'PENDING' | 'ONGOING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED'
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'ONGOING' | 'ON_HOLD' | 'COMPLETED' | 'REJECTED' | 'CANCELLED'
 
 export type UrgencyLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 

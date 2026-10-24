@@ -3,11 +3,13 @@
 import { use, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import RecordedWorkers from '@/components/shared/RecordedWorkers';
+import type { RecordedWorker } from '@/lib/workers/types';
 import RequestInfoCard from '@/components/admin/RequestInfoCard';
 import RequestStatusStepper from '@/components/admin/RequestStatusStepper';
 import ActivityLog from '@/components/admin/ActivityLog';
 import RejectRequestModal from '@/components/admin/RejectRequestModal';
-import { RequestStatus, IssueType, UrgencyLevel, Building } from '@prisma/client';
+import { RequestStatus, UrgencyLevel } from '@prisma/client';
 
 // Typed to match what /api/admin/requests/[id] actually returns
 interface RequestDetail {
@@ -16,9 +18,13 @@ interface RequestDetail {
   status: RequestStatus;
   urgencyLevel: UrgencyLevel;
   priorityLevel: string;
-  issueType: IssueType;
-  building: Building;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   locationNotes?: string | null;
   description: string;
   adminNotes?: string | null;
@@ -26,6 +32,7 @@ interface RequestDetail {
   rejectionReason?: string | null;
   cancellationReason?: string | null;
   assignedToId?: string | null;
+  assignedToDesignatedHead?: boolean;
   submittedById: string;
   // Relations (returned by the GET include)
   submitter?: {
@@ -35,6 +42,7 @@ interface RequestDetail {
     avatarUrl?: string | null;
   } | null;
   assignee?: {
+    email?: string;
     firstName: string;
     lastName: string;
     specialization?: string | null;
@@ -42,6 +50,7 @@ interface RequestDetail {
   } | null;
   repairNote?: unknown | null;
   statusHistory: unknown[];
+  workerAssignments?: RecordedWorker[];
 }
 
 export default function AdminRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -92,6 +101,8 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
     building:      request.building,
     roomNumber:    request.roomNumber,
     priorityLevel: request.priorityLevel,
+    workLocation: request.workLocation,
+    description: request.description,
   };
 
   return (
@@ -109,10 +120,10 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
 
       <div className="mb-8">
         <h1 className="font-h1 text-h1 text-slate-900 leading-tight">
-          Triage Request: REQ-{request.requestCode}
+          Review Request: {request.requestCode}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Review details, set priority, then approve or reject the request.
+          Review the request. Approval automatically forwards it to the designated technician head.
         </p>
       </div>
 
@@ -157,6 +168,15 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ i
           onRefresh={handleRefresh}
           onReject={() => setShowRejectModal(true)}
         />
+        {request.assignee && <section aria-label="Request receiving account" className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-slate-900">{request.assignedToDesignatedHead ? 'Receiving Technician Head' : 'Historical Assigned Account'}</h2>
+          <p className="mt-2 text-slate-800">{request.assignee.firstName} {request.assignee.lastName}</p>
+          <p className="mt-1 break-all text-sm text-slate-600">{request.assignee.email}</p>
+          <p className="mt-3 text-sm text-slate-600">{request.assignedToDesignatedHead
+            ? 'The head coordinates with maintenance workers outside FixTrack. External contact is not automatically tracked.'
+            : 'This historical assignment is preserved. No account or assignment was automatically changed.'}</p>
+        </section>}
+        <RecordedWorkers assignments={request.workerAssignments || []} showHistory />
         <ActivityLog statusHistory={request.statusHistory ?? []} />
       </div>
 

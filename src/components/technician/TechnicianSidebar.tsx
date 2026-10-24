@@ -48,6 +48,7 @@ export default function TechnicianSidebar({
     { name: 'Dashboard',    href: '/technician/dashboard', icon: 'dashboard' },
     { name: 'Inbox',        href: '/technician/notifications', icon: 'inbox' },
     { name: 'My Tasks',     href: '/technician/tasks',     icon: 'build' },
+    { name: 'Workers',      href: '/technician/workers',   icon: 'groups' },
     { name: 'Task History', href: '/technician/history',   icon: 'history' },
     { name: 'My Profile',   href: '/technician/profile',   icon: 'person' },
   ];
@@ -107,6 +108,7 @@ export default function TechnicianSidebar({
               className={getLinkClasses(link.href)}
             >
               <span
+                aria-hidden="true"
                 className="material-symbols-outlined"
                 style={isActive(link.href) ? { fontVariationSettings: "'FILL' 1" } : undefined}
               >

@@ -1,4 +1,5 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 // FIXED: BUG #3 — Added 'use client' directive for consistency; used inside client component tree
 
 import Link from 'next/link';
@@ -7,9 +8,13 @@ import Link from 'next/link';
 export interface TaskRow {
   id: string;
   requestCode: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   priorityLevel: string;
   status: string;
   assignedAt: string;
@@ -25,19 +30,9 @@ interface TasksTableProps {
   isLoading: boolean;
 }
 
-const getIssueTypeLabel = (type: string) => {
-  const map: Record<string, string> = {
-    HVAC: 'HVAC Repair',
-    ELECTRICAL: 'Electrical Work',
-    PLUMBING: 'Plumbing Leak',
-    CARPENTRY: 'Carpentry Work',
-    STRUCTURAL: 'Structural Repair',
-    OTHERS: 'General Repair'
-  };
-  return map[type] || type;
-};
 
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
+
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '-';
@@ -125,13 +120,13 @@ export default function TasksTable({ tasks, isLoading }: TasksTableProps) {
                       {task.requestCode}
                     </td>
                     <td className="px-6 py-4 font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">
-                      {getIssueTypeLabel(task.issueType)}
+                      {getRequestSubject(task)}
                     </td>
                     <td className="px-6 py-4 text-on-surface whitespace-nowrap">
                       {task.submitter.firstName} {task.submitter.lastName}
                     </td>
                     <td className="px-6 py-4 text-on-surface whitespace-nowrap">
-                      {getBuildingLabel(task.building)} {task.roomNumber}
+                      {getWorkLocation(task)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {task.priorityLevel === 'URGENT' && (

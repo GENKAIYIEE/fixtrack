@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 import { prisma } from '@/lib/prisma';
 import type { AuditAction, Prisma } from '@prisma/client';
 
 async function verifyAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getActiveSession(['ADMIN']);
   const authUser = session?.user;
 
   if (!authUser) return { error: 'Unauthorized', status: 401 as const };

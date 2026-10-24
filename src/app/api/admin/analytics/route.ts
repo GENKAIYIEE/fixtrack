@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getActiveSession } from '@/lib/auth/access';
 
 import { getBuildingLabel } from '@/lib/constants/buildings';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getActiveSession(['ADMIN']);
     const user = session?.user;
 
     if (!user) {
@@ -58,14 +57,14 @@ export async function GET(request: NextRequest) {
     // 3. Top Issue Type
     const topIssueTypes = await prisma.maintenanceRequest.groupBy({
       by: ['issueType'],
-      _count: { issueType: true },
+      _count: { _all: true },
       where: { createdAt: { gte: rangeStart } },
-      orderBy: { _count: { issueType: 'desc' } },
+      orderBy: { _count: { id: 'desc' } },
       take: 1
     });
 
-    const topIssueType = topIssueTypes[0]?.issueType || 'None';
-    const topIssueTypeCount = topIssueTypes[0]?._count.issueType || 0;
+    const topIssueType = topIssueTypes.length ? topIssueTypes[0].issueType || 'Not classified (official form)' : 'None';
+    const topIssueTypeCount = topIssueTypes[0]?._count._all || 0;
 
     // FIXED: BUG-06 — Removed two dead code loops:
     //   1. dailyVolumeMap loop (used "E dd" format with collision bug for ranges >7 days; values never used in output)
@@ -154,15 +153,15 @@ export async function GET(request: NextRequest) {
     // 6. Building Volume
     const buildingGroup = await prisma.maintenanceRequest.groupBy({
       by: ['building'],
-      _count: { building: true },
+      _count: { _all: true },
       where: { createdAt: { gte: rangeStart } },
-      orderBy: { _count: { building: 'desc' } },
+      orderBy: { _count: { id: 'desc' } },
       take: 5
     });
 
     const buildingVolume = buildingGroup.map(b => ({
       building: getBuildingLabel(b.building),
-      count: b._count.building
+      count: b._count._all
     }));
 
     return NextResponse.json({

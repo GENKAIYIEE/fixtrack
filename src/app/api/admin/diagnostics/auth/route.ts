@@ -1,3 +1,4 @@
+import { getActiveSession } from '@/lib/auth/access';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@supabase/supabase-js';
@@ -13,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
  * REMOVE THIS ENDPOINT IN PRODUCTION.
  */
 export async function GET() {
+  if (!await getActiveSession(['ADMIN'])) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   // Basic security: only allow in development
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
@@ -148,46 +150,8 @@ export async function GET() {
   });
 }
 
-/**
- * PATCH /api/admin/diagnostics/auth
- * Activate technician accounts stuck in PENDING status.
- */
-export async function PATCH(request: Request) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
-  }
-
-  let body: any;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { action, ids } = body;
-
-  if (action !== 'activate' || !Array.isArray(ids) || ids.length === 0) {
-    return NextResponse.json(
-      { error: 'Body must be: { action: "activate", ids: ["id1", "id2"] }' },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const result = await prisma.user.updateMany({
-      where: {
-        id: { in: ids },
-        role: 'TECHNICIAN',
-        accountStatus: 'PENDING',
-      },
-      data: { accountStatus: 'ACTIVE' },
-    });
-
-    return NextResponse.json({
-      message: `Activated ${result.count} technician account(s).`,
-      count: result.count,
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+/** Retired bulk activation: every pending decision must use the audited verification flow. */
+export async function PATCH() {
+  if (!await getActiveSession(['ADMIN'])) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return NextResponse.json({ error: 'Bulk activation is disabled. Review each pending account in Account verification.' }, { status: 409 });
 }

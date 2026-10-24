@@ -1,17 +1,22 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Toast from '@/components/shared/Toast';
-import { getBuildingLabel } from '@/lib/constants/buildings';
+
 
 type RequestRecord = {
   id: string;
   requestCode: string;
   title: string;
-  issueType: string;
-  building: string;
-  roomNumber: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
+  building: string | null;
+  roomNumber: string | null;
   description: string;
   status: string;
   priorityLevel: string;
@@ -30,14 +35,7 @@ type Summary = {
   cancelled: number;
 };
 
-const issueTypeLabels: Record<string, string> = {
-  HVAC: 'HVAC',
-  ELECTRICAL: 'Electrical',
-  PLUMBING: 'Plumbing',
-  CARPENTRY: 'Carpentry',
-  STRUCTURAL: 'Structural',
-  OTHERS: 'Others',
-};
+
 
 const STATUS_STYLES: Record<string, { badge: string; dot: string; label: string }> = {
   PENDING: {
@@ -382,15 +380,13 @@ export default function RequestHistoryPage() {
 
                       {/* Issue Type */}
                       <td className="px-5 py-4 text-on-surface-variant text-sm">
-                        {issueTypeLabels[req.issueType] ?? req.issueType}
+                        {getRequestSubject(req)}
                       </td>
 
                       {/* Location */}
                       <td className="px-5 py-4 text-on-surface-variant text-sm whitespace-nowrap">
-                        {getBuildingLabel(req.building)}
-                        {req.roomNumber ? (
-                          <span className="text-outline"> — {req.roomNumber}</span>
-                        ) : null}
+                        {getWorkLocation(req)}
+                        
                       </td>
 
                       {/* Date */}

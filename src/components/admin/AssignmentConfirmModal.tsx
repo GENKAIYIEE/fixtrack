@@ -1,10 +1,12 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import React from 'react';
 
 interface AssignmentConfirmModalProps {
-  request: any;
-  technician: any;
+  request: { requestCode: string; priorityLevel?: string | null; workLocation?: string | null;
+    issueType?: string | null; building?: string | null; roomNumber?: string | null; locationNotes?: string | null; description?: string | null };
+  technician: { firstName: string; lastName?: string | null; email?: string; avatarUrl?: string | null };
   onConfirm: () => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -42,7 +44,7 @@ export default function AssignmentConfirmModal({
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-outline-variant">
-          <h2 className="text-lg font-bold text-on-surface">Confirm Assignment</h2>
+          <h2 className="text-lg font-bold text-on-surface">Confirm Relay to Technician Head</h2>
           <button onClick={onCancel} disabled={isLoading} className="text-on-surface-variant hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -59,7 +61,8 @@ export default function AssignmentConfirmModal({
                   {request.priorityLevel || 'NORMAL'}
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-on-surface">{request.issueType}</h3>
+              <h3 className="text-sm font-bold text-on-surface">{getRequestSubject(request)}</h3>
+              <p className="mt-1 text-xs text-on-surface-variant">{getWorkLocation(request)}</p>
             </div>
             <span className="material-symbols-outlined text-on-surface-variant text-3xl">build_circle</span>
           </div>
@@ -87,8 +90,9 @@ export default function AssignmentConfirmModal({
                 {`${technician.firstName} ${technician.lastName || ''}`.trim()}
               </h3>
               <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mt-0.5">
-                {technician.specialization || 'GENERAL'}
+                Technician Head
               </p>
+              <p className="mt-1 break-all text-xs text-on-surface-variant">{technician.email}</p>
             </div>
           </div>
         </div>

@@ -46,3 +46,8 @@ next-env.d.ts
 .claude/settings.local.json
 
 .claude
+# Local configuration and test outputs
+.env.*
+!.env.example
+test-results/
+playwright-report/

@@ -1,11 +1,16 @@
 'use client';
+import { getWorkLocation, getRequestSubject } from '@/lib/requests/display';
 
 import React from 'react';
 
 export interface UnassignedRequest {
   id: string;
   requestCode: string;
-  issueType: string;
+  issueType: string | null;
+  workLocation?: string | null;
+  requestDate?: string | null;
+  requestingParty?: string | null;
+  requestedPriority?: string | null;
   urgencyLevel: string;
   priorityLevel: string;
   description: string;
@@ -98,13 +103,14 @@ export default function UnassignedRequestsPanel({
                 </div>
 
                 <h3 className="text-sm font-bold text-on-surface mb-2 pl-2">
-                  {request.issueType}
+                  {getRequestSubject(request)}
                 </h3>
 
                 <p className="text-xs text-on-surface-variant line-clamp-2 mb-3 pl-2">
                   {request.description}
                 </p>
 
+                <p className="mb-3 pl-2 text-xs text-on-surface-variant">{getWorkLocation(request)}</p>
                 <div className="flex items-center justify-between mt-auto pl-2">
                   <span className="text-[11px] text-on-surface-variant">
                     {getTimeAgo(request.createdAt)}
@@ -118,7 +124,7 @@ export default function UnassignedRequestsPanel({
                       isSelected ? 'bg-primary text-on-primary' : 'bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary'
                     }`}
                   >
-                    {isSelected ? 'Selected' : 'Assign'}
+                    {isSelected ? 'Selected' : 'Relay'}
                   </button>
                 </div>
               </div>
